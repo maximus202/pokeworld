@@ -1,0 +1,33 @@
+{
+  "name": "grass",
+  "pokemon": [
+    {
+      "slot": 1,
+      "pokemon": {
+        "name": "bulbasaur",
+        "url": ""
+      }
+    },
+    {
+      "slot": 1,
+      "pokemon": {
+        "name": "ivysaur",
+        "url": ""
+      }
+    },
+    {
+      "slot": 1,
+      "pokemon": {
+        "name": "venusaur",
+        "url": ""
+      }
+    },
+    {
+      "slot": 1,
+      "pokemon": {
+        "name": "lotad",
+        "url": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": 9001,
+  "name": "spriteonly",
+  "height": 10,
+  "abilities": [
+    {
+      "ability": {
+        "name": "run-away"
+      }
+    }
+  ],
+  "types": [
+    {
+      "slot": 1,
+      "type": {
+        "name": "normal"
+      }
+    }
+  ],
+  "sprites": {
+    "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9001.png",
+    "front_shiny": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/9001.png",
+    "other": {}
+  }
+}
