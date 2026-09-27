@@ -27,3 +27,11 @@
   --color-pokeyellow-900: #683a11;
   --color-pokeyellow-950: #3c1d05;
 }
+
+:root {
+  --ui-primary: var(--color-pokered-600);
+}
+
+.dark {
+  --ui-primary: var(--color-pokered-400);
+}
