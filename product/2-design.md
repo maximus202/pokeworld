@@ -43,10 +43,9 @@ its own private collection, identified by a cookie and stored in SQLite.
   first-party and needs no proxy, CORS or credentials setup.
 - **PokeAPI access:** PokeAPI is only called from Nuxt server routes, never from the
   browser. The browser talks to `/api/*` only.
-- **Storage:** SQLite via the built-in `node:sqlite` module (no native build step). It
-  needs **Node >= 22.13** (earlier 22.x versions require an experimental flag or do not
-  ship it). Pin this in `engines` and `.nvmrc`, and note it in the README. The database
-  file is created on startup (`data/pokeworld.db`) and is git-ignored.
+- **Storage:** SQLite via `better-sqlite3`. It ships prebuilt binaries for current Node
+  versions, so there is no compile step and users do not need to install or upgrade Node.
+  The database file is created on startup (`data/pokeworld.db`) and is git-ignored.
 - **Visibility:** the header shows a short label derived from the visitor ID (first four
   characters, e.g. "Trainer #a3f9") and a "Reset my collection" button. Because the cookie
   is `httpOnly`, the frontend gets the label from `GET /api/me`.
@@ -68,13 +67,16 @@ stores only the Pokemon name; display data (image, etc.) comes from the Pokemon 
 
 | Method | Path | Behaviour |
 | --- | --- | --- |
-| `GET` | `/api/pokemon?q=&limit=&offset=` | Lists Pokemon as `{ id, name, imageUrl }` (default image), paginated. `q` filters by name (case-insensitive substring), so it serves both the list and search stories |
+| `GET` | `/api/pokemon?q=&limit=&offset=` | Lists Pokemon as `{ items: [{ id, name, imageUrl, shiny }], total }`, paginated. `imageUrl` is the shiny image when the Pokemon has `grass` as any type. `q` filters by name (case-insensitive substring), so it serves both the list and search stories |
 | `GET` | `/api/pokemon/:name` | Details: `{ id, name, height, abilities, types, image: { url, shiny } }`. The image comes from `pickImage`, so the grass-shiny rule lives server-side. Returns `404` for an unknown name |
 
 - **Search:** PokeAPI has no search endpoint. The server fetches the full name list once
   (`GET /pokemon?limit=100000`), keeps it in memory, and filters and paginates it itself.
-- **List images:** list items need a default image without one request per Pokemon, so
-  `imageUrl` is derived from the Pokemon `id` (the PokeAPI sprites repository URL pattern).
+- **List images:** list items need an image without one request per Pokemon, so `imageUrl`
+  is derived from the Pokemon `id` (the PokeAPI sprites repository URL pattern, using the
+  `official-artwork/shiny/{id}.png` path when shiny). Which Pokemon are grass is known from
+  a single `GET /type/grass` call, cached in memory as a set of names (it covers grass in
+  any slot). The client falls back to the default image if a shiny image fails to load.
 - **Caching:** PokeAPI responses are cached in memory for the life of the server process,
   since the data is effectively static. This also means a collection of N Pokemon does not
   cost N upstream requests on every view.
