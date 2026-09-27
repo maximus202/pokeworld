@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* Palette modelled on pokemon.com: signature red, yellow and blue. */
+@theme static {
+  --color-pokered-50: #fff1f1;
+  --color-pokered-100: #ffe0e0;
+  --color-pokered-200: #ffc6c6;
+  --color-pokered-300: #ff9c9c;
+  --color-pokered-400: #ff6262;
+  --color-pokered-500: #f83a3a;
+  --color-pokered-600: #ee1515;
+  --color-pokered-700: #c80e0e;
+  --color-pokered-800: #a51010;
+  --color-pokered-900: #891414;
+  --color-pokered-950: #4b0505;
+
+  --color-pokeyellow-50: #fffbeb;
+  --color-pokeyellow-100: #fff3c6;
+  --color-pokeyellow-200: #ffe788;
+  --color-pokeyellow-300: #ffd84a;
+  --color-pokeyellow-400: #ffcb05;
+  --color-pokeyellow-500: #e0a800;
+  --color-pokeyellow-600: #b87d00;
+  --color-pokeyellow-700: #935808;
+  --color-pokeyellow-800: #7a450e;
+  --color-pokeyellow-900: #683a11;
+  --color-pokeyellow-950: #3c1d05;
+}
