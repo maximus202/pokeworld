@@ -31,7 +31,7 @@ its own private collection, identified by a cookie and stored in SQLite.
 - **Identity:** on any request without a valid visitor cookie, a Nuxt server middleware
   (`server/middleware/visitor.ts`) generates a random UUID and sets it as the
   `pokeworld_visitor` cookie (`httpOnly`, `SameSite=Lax`, 1 year, `Secure` in production
-  only). A malformed cookie value is treated as missing and replaced.
+  when the request is https). A malformed cookie value is treated as missing and replaced.
 - **Not authentication:** the cookie is an identifier, not a credential. Anyone holding
   the value can act as that visitor. This is acceptable for a take-home and is stated in
   the README.

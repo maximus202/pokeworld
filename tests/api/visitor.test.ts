@@ -23,7 +23,7 @@ describe('visitor cookie', () => {
     expect(cookie).toMatch(/HttpOnly/i)
     expect(cookie).toMatch(/SameSite=Lax/i)
     expect(cookie).toMatch(/Max-Age=31536000/i)
-    expect(cookie).not.toMatch(/Secure/i) // non-production
+    expect(cookie).not.toMatch(/Secure/i) // plain http
     expect(await res.json()).toEqual({ label: `Trainer #${cookie.split('=')[1]!.slice(0, 4)}` })
   })
 

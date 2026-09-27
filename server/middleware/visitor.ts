@@ -23,7 +23,8 @@ export default defineEventHandler((event) => {
     sameSite: 'lax',
     maxAge: ONE_YEAR,
     path: '/',
-    secure: process.env.NODE_ENV === 'production'
+    // Secure only in production over https, so `npm run preview` on http://localhost still works.
+    secure: process.env.NODE_ENV === 'production' && getRequestProtocol(event, { xForwardedProto: true }) === 'https'
   })
   event.context.visitorId = visitorId
 })
