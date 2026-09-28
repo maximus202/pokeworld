@@ -43,6 +43,8 @@ For a production build (`npm run build`, then `npm run preview`), set the runtim
 - **Private, no login:** each browser gets its own collection and a label like "Trainer #a3f9".
 - **Failure states:** loading skeletons, empty states, and errors with a retry for the list, the
   panel and the collection.
+- **Accessible colours:** text meets WCAG AA contrast (checked with axe-core), and everything works
+  by keyboard and at phone width.
 
 ## Decisions and tradeoffs
 
@@ -64,12 +66,16 @@ For a production build (`npm run build`, then `npm run preview`), set the runtim
 - **Responses are cached in memory for the life of the process,** with no size limit or expiry.
   PokeAPI data is effectively static and the cache holds at most the index, the type lists and the
   Pokemon actually viewed. Failed requests are never cached.
-- **Catching validates the Pokemon** against PokeAPI first, so the collection can only hold real
-  Pokemon and the count always matches what the grid can show.
+- **Only the 1,025 Pokedex Pokemon are included, not alternate forms.** PokeAPI also lists
+  mega evolutions and regional variants as separate entries (326 of them, numbered from 10001).
+  They would clutter the list, so they are left out of browsing, search and catching.
+- **Catching validates the Pokemon** against the cached name list first, so the collection can
+  only hold real Pokemon, the count always matches what the grid can show, and a made-up name
+  never costs a request to PokeAPI.
 - **Each visitor is capped at 1,000 Pokemon,** so one visitor cannot grow the database without
   bound. It is above the number of Pokemon that exist, so normal use never reaches it.
 - **The collection is joined on the server.** `GET /api/collection` returns each caught Pokemon
-  with what the grid needs in one request. If PokeAPI is down after a restart, entries still come
+  with what the grid needs in one request, looking them up at most 8 at a time. If PokeAPI is down after a restart, entries still come
   back (marked as unloadable) so the count and dates are right and the UI can offer a retry.
 - **The header count is rendered on the server,** so it is correct on the first paint. The
   visitor middleware writes a newly issued ID into the request's cookie header so the server-side

@@ -52,12 +52,25 @@ function idFromUrl(url: string): number {
 /** Types that have no Pokemon to browse. */
 const HIDDEN_TYPES = new Set(['unknown', 'shadow', 'stellar'])
 
-/** Every Pokemon name and id, in PokeAPI order. One upstream request. */
+/**
+ * PokeAPI numbers alternate forms (mega evolutions, regional variants, ...) from 10001 upwards.
+ * They are not separate Pokedex entries, so the app browses, searches and catches only the rest.
+ */
+const FIRST_ALTERNATE_FORM_ID = 10000
+
+/** Every Pokedex Pokemon's name and id, in PokeAPI order. One upstream request. */
 export function getPokemonIndex(): Promise<PokemonIndexEntry[]> {
   return cached('index', async () => {
     const data = await upstream<{ results: { name: string, url: string }[] }>('/pokemon?limit=100000')
-    return data.results.map(r => ({ id: idFromUrl(r.url), name: r.name }))
+    return data.results
+      .map(r => ({ id: idFromUrl(r.url), name: r.name }))
+      .filter(p => p.id < FIRST_ALTERNATE_FORM_ID)
   })
+}
+
+/** The names in the index, for a lookup that needs no upstream request once it is cached. */
+function getPokemonNames(): Promise<Set<string>> {
+  return cached('index-names', async () => new Set((await getPokemonIndex()).map(p => p.name)))
 }
 
 /** Names of the Pokemon types, for the filter control. */
@@ -79,8 +92,14 @@ export function getTypeMembers(type: string): Promise<Set<string>> {
 /** Names of every Pokemon with grass in any type slot. */
 export const getGrassNames = () => getTypeMembers('grass')
 
-/** PokeAPI details for one Pokemon; a 404 H3 error when it does not exist. */
-export function getPokemon(name: string): Promise<PokeApiPokemon> {
+/**
+ * PokeAPI details for one Pokemon; a 404 H3 error when it does not exist. Unknown names are
+ * rejected from the cached index, so a made-up name never costs an upstream request.
+ */
+export async function getPokemon(name: string): Promise<PokeApiPokemon> {
+  if (!(await getPokemonNames()).has(name)) {
+    throw createError({ statusCode: 404, statusMessage: 'Not found' })
+  }
   return cached(`pokemon:${name}`, () => upstream<PokeApiPokemon>(`/pokemon/${encodeURIComponent(name)}`))
 }
 

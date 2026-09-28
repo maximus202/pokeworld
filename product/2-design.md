@@ -124,18 +124,20 @@ interface CollectionStore {
 | `DELETE` | `/api/collection/:name` | Remove. `204`. Idempotent |
 | `DELETE` | `/api/collection` | Reset. `204`. Deletes every row for this visitor |
 
-- **Catch validation.** `PUT` resolves the name through the cached `getPokemon(name)` before
-  inserting, so unknown names are rejected and the header count can never include a Pokemon that
+- **Catch validation.** `PUT` resolves the name through `getPokemon(name)` (index check, then the
+  cached details) before inserting, so unknown names are rejected and the header count can never include a Pokemon that
   cannot be displayed. Names are also lower-cased and checked against `^[a-z0-9-]{1,100}$`.
   Because a new catch is what the client wants to render next, this warms the cache for the
   details panel and the collection at no extra cost.
 - **Collection resolves server-side.** `GET /api/collection` joins each caught name with its list
   item (`{ id, name, imageUrl, shiny }`, from the cached details) in one round trip, instead of N
-  client requests. If PokeAPI fails for one entry, that entry is returned with `pokemon: null`
+  client requests, with at most 8 lookups in flight (`mapLimit`), so a large collection on a cold
+  cache after a restart does not become that many simultaneous PokeAPI requests. If PokeAPI fails
+  for one entry, that entry is returned with `pokemon: null`
   rather than dropped, so `count` always equals `items.length` and the UI can show a per-card error
   with a retry.
-- **Why `200` with a body for catch.** The client needs the server-assigned `caughtAt` to show the
-  date immediately, without a refetch.
+- **Why `200` with a body for catch.** The response carries the server-assigned `caughtAt`, so
+  the API result is complete on its own (the web client then refreshes the collection).
 
 **Tenancy at a glance:**
 
@@ -154,6 +156,13 @@ Browser B (cookie 7c21...) ──► /api/collection ──► rows WHERE visito
 
 - **Search.** PokeAPI has no search endpoint, so the server fetches the full name list once
   (`GET /pokemon?limit=100000`), keeps it in memory, and filters and paginates it itself.
+- **Pokedex entries only.** PokeAPI numbers alternate forms (mega evolutions, regional variants,
+  and so on) from id 10001 upwards; they would be a third of the list (326 of 1,351) and show as
+  `#10033`. The index keeps only ids below 10000, so forms are not browsed, searched, caught or
+  opened.
+- **Unknown names never reach PokeAPI.** `getPokemon(name)` checks the name against the cached
+  index first and answers `404` locally. A made-up name therefore costs no upstream request, and
+  failed lookups (which are not cached) cannot be used to hammer PokeAPI.
 - **Type filter.** `GET /type/{type}` lists every Pokemon with that type in any slot. The server
   caches that per type as a set of names and intersects it with the search result. `type` values
   are validated against `GET /api/types` (which excludes PokeAPI's `unknown`, `shadow` and
@@ -233,6 +242,11 @@ grid and controls. Caught Pokemon are marked with a "Caught" badge in the browse
 accent). Mobile-first grid (2 columns up to 6), visible focus rings, buttons and links reachable
 by keyboard, images with alt text, and colour never the only indicator (the "Shiny" and
 "Caught" badges carry text).
+
+**Contrast.** Nuxt UI's default red (`red-500`) gives white text 3.8:1, under the 4.5:1 that WCAG AA
+needs for small text. The light theme uses the 700 shade (6.4:1 for white on red, 5.4:1 for red
+text on a light tint), set in `app/assets/css/main.css`. An axe-core scan of the browse, panel,
+collection and reset screens reports no contrast violations.
 
 ## 5. How do we validate the app automatically?
 

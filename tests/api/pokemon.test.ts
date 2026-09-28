@@ -76,6 +76,31 @@ describe('GET /api/pokemon', () => {
   })
 })
 
+describe('alternate forms', () => {
+  it('are left out of the list and search, so the list holds only Pokedex entries', async () => {
+    const all = (await list('?limit=100')).body
+    expect(all.total).toBe(30)
+    expect(all.items.map(i => i.name)).not.toContain('deoxys-attack')
+    expect(all.items.every(i => i.id < 10000)).toBe(true)
+    expect((await list('?q=deoxys')).body).toEqual({ total: 0, items: [] })
+  })
+
+  it('cannot be opened, because only the app\'s own Pokemon exist', async () => {
+    expect((await v.json('/api/pokemon/deoxys-attack')).status).toBe(404)
+  })
+})
+
+describe('unknown names', () => {
+  it('are rejected without asking PokeAPI', async () => {
+    await v.json('/api/pokemon') // make sure the index is cached
+    await fixture().reset()
+    expect((await v.json('/api/pokemon/zzz-not-real')).status).toBe(404)
+    expect((await v.json('/api/pokemon/deoxys-attack')).status).toBe(404)
+    expect((await fixture().counts())['/pokemon/zzz-not-real']).toBeUndefined()
+    expect((await fixture().counts())['/pokemon/deoxys-attack']).toBeUndefined()
+  })
+})
+
 describe('GET /api/types', () => {
   it('lists the types, without the ones that have no Pokemon', async () => {
     const { body } = await v.json<{ types: string[] }>('/api/types')

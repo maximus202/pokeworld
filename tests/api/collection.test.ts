@@ -38,6 +38,17 @@ describe('catching', () => {
     expect((await collection(v)).body).toEqual({ count: 0, items: [] })
   })
 
+  it('rejects an unknown name without asking PokeAPI', async () => {
+    const v = visitor()
+    await collection(v) // make sure the index is cached
+    await fixture().reset()
+    expect((await put(v, 'zzz-not-real')).status).toBe(404)
+    expect((await put(v, 'deoxys-attack')).status).toBe(404) // an alternate form
+    const counts = await fixture().counts()
+    expect(counts['/pokemon/zzz-not-real']).toBeUndefined()
+    expect(counts['/pokemon/deoxys-attack']).toBeUndefined()
+  })
+
   it('rejects a malformed name with 400', async () => {
     const v = visitor()
     expect((await put(v, 'not%20valid!')).status).toBe(400)
