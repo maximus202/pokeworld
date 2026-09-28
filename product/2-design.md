@@ -43,7 +43,8 @@ are grass comes from one `GET /type/grass` call, cached as a set of names (it co
 any slot).
 
 **Fallback in the browser:** if a shiny image fails to load, the image component swaps to the
-default URL and drops the badge.
+default URL and drops the badge. A server-rendered `<img>` can fail before Vue hydrates and misses
+the `error` event, so the component also checks on mount for an image that has already failed.
 
 ## 2. How do we keep each user's collection separate without accounts?
 
@@ -69,8 +70,8 @@ SQLite.
 never flashes a wrong number. On a visitor's first request the cookie does not exist yet, so the
 middleware also writes the new ID into the incoming request's `cookie` header. Server-side
 sub-requests made with `useRequestFetch()` then see the same visitor as the document response.
-If that proves unreliable in testing, the fallback is to fetch the label client-side and render
-the count from a returning-visitor cookie only; the tenancy tests below would catch a mismatch.
+This was verified against a production build: a first-visit page renders the same label as the
+cookie it issues, and a returning visitor's own ID is used. Both are covered by tests.
 
 **Storage:** SQLite via `better-sqlite3`. It ships prebuilt binaries, so there is no compile
 step, and it avoids requiring a very recent Node for `node:sqlite`. The file is created on first
@@ -107,7 +108,8 @@ interface CollectionStore {
 - `list` orders by `caught_at DESC, name`.
 - `add` is idempotent: catching a Pokemon that is already caught returns the *existing* entry and
   keeps its original date. The check, the size cap and the insert run in one transaction.
-- **Size cap:** 1,000 entries per visitor (`MAX_COLLECTION_SIZE`), so a single visitor cannot
+- **Size cap:** 1,000 entries per visitor (`runtimeConfig.maxCollectionSize`, overridable with
+  `NUXT_MAX_COLLECTION_SIZE`, which the API tests set to 4), so a single visitor cannot
   grow the database without bound. It is above the number of Pokemon that exist, so a normal user
   never hits it; `add` returns `'full'` and the route answers `409`. Adding an already-caught
   Pokemon while full is still a success.
@@ -154,8 +156,8 @@ Browser B (cookie 7c21...) ──► /api/collection ──► rows WHERE visito
   (`GET /pokemon?limit=100000`), keeps it in memory, and filters and paginates it itself.
 - **Type filter.** `GET /type/{type}` lists every Pokemon with that type in any slot. The server
   caches that per type as a set of names and intersects it with the search result. `type` values
-  are validated against `GET /api/types` (which excludes PokeAPI's non-battle `unknown` and
-  `shadow` types); an unrecognised value returns `404`.
+  are validated against `GET /api/types` (which excludes PokeAPI's `unknown`, `shadow` and
+  `stellar` types, none of which has Pokemon to browse); an unrecognised value returns `404`.
 - **Caught-only filter.** With `caught=true` the route reads the visitor's names from the store
   and intersects them with the index, so pagination and `total` stay correct alongside `q` and
   `type`. This is the one list parameter that depends on the visitor; the cache holds only
@@ -167,7 +169,8 @@ Browser B (cookie 7c21...) ──► /api/collection ──► rows WHERE visito
   index plus one record per Pokemon actually viewed.
 - **Errors.** Every upstream failure is converted to a clean `502 PokeAPI request failed`, in the
   list, details, types and collection routes alike, so the UI always gets a predictable error it
-  can render with a retry.
+  can render with a retry. The server makes one attempt with a 10 s timeout; the browser's
+  `$fetch` retries a failed GET once on its own.
 - **Units.** `height` is passed through in decimetres; the UI converts it (`0.7 m (2′04″)`).
 - **Pure image picker.** `pickImage(pokemon)` takes the PokeAPI response and returns
   `{ url, shiny }`. It holds the grass-in-any-slot rule and the artwork-to-sprite fallback and is
@@ -188,11 +191,13 @@ Browser B (cookie 7c21...) ──► /api/collection ──► rows WHERE visito
 **State and data flow**
 
 - `useCollection()` holds the visitor's `items` in shared state, filled on the server (see
-  first-visit SSR) and updated locally after catch, remove and reset. `caughtAt` for the panel
-  and cards comes from here, so the details route stays identical for every visitor.
+  first-visit SSR) and re-fetched from `GET /api/collection` after every catch, remove and reset,
+  so the client never drifts from the server (responses come from the PokeAPI cache and are
+  cheap). `caughtAt` for the panel and cards comes from here, so the details route stays
+  identical for every visitor.
 - The list uses `useFetch` keyed on `q`, `type` and `caught`. Search is debounced (250 ms) and,
   with the type and toggle, mirrored into the URL query (`?q=&type=&caught=true`) so the view
-  survives reload and back/forward. Catching or removing while "Caught only" is on refreshes the
+  survives a reload (filter changes replace the history entry rather than adding one). Catching or removing while "Caught only" is on refreshes the
   list.
 - The details panel fetches `/api/pokemon/:name` client-side and ignores stale responses when the
   visitor clicks quickly between Pokemon.
@@ -213,9 +218,8 @@ Browser B (cookie 7c21...) ──► /api/collection ──► rows WHERE visito
 | Reset fails | Error shown in the confirm dialog; the collection is unchanged |
 | Collection full (409) | Toast saying the collection is full |
 
-**Caught date display.** "Caught Sep 28, 2026" on collection cards and in the panel (relative
-form such as "2 days ago" in a tooltip). Formatted with `Intl.DateTimeFormat` in the visitor's
-local zone.
+**Caught date display.** "Caught Sep 28, 2026" on collection cards and in the panel, with the
+exact date and time in a tooltip. Formatted in the visitor's local zone.
 
 **Removing from the grid.** Each collection card has a remove button (with an accessible label,
 "Remove Bulbasaur"), so a Pokemon does not have to be opened first. Removal is immediate and
