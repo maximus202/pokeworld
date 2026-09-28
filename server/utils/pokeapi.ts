@@ -36,7 +36,7 @@ function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
 async function upstream<T>(path: string): Promise<T> {
   const { pokeapiBaseUrl } = useRuntimeConfig()
   try {
-    return await $fetch<T>(`${pokeapiBaseUrl}${path}`, { retry: 0, timeout: 10_000 })
+    return await $fetch(`${pokeapiBaseUrl}${path}`, { retry: 0, timeout: 10_000 }) as T
   } catch (error) {
     if ((error as { statusCode?: number }).statusCode === 404) {
       throw createError({ statusCode: 404, statusMessage: 'Not found' })
