@@ -8,6 +8,7 @@ function intParam(value: unknown, fallback: number, min: number, max: number): n
 export default defineEventHandler(async (event): Promise<PokemonList> => {
   const query = getQuery(event)
   const q = String(query.q ?? '').trim().toLowerCase()
+  const caughtOnly = query.caught === 'true'
   const type = query.type ? requireName(String(query.type)) : ''
   const limit = intParam(query.limit, 24, 1, 100)
   const offset = intParam(query.offset, 0, 0, Number.MAX_SAFE_INTEGER)
@@ -25,6 +26,10 @@ export default defineEventHandler(async (event): Promise<PokemonList> => {
   let matches = index
   if (q) matches = matches.filter(p => p.name.includes(q))
   if (typeMembers) matches = matches.filter(p => typeMembers.has(p.name))
+  if (caughtOnly) {
+    const caught = new Set(useCollectionStore().list(requireVisitorId(event)).map(e => e.name))
+    matches = matches.filter(p => caught.has(p.name))
+  }
 
   return {
     total: matches.length,
