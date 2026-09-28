@@ -13,6 +13,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Override at runtime with NUXT_DB_PATH / NUXT_POKEAPI_BASE_URL.
     dbPath: process.env.DB_PATH || 'data/pokeworld.db',
-    pokeapiBaseUrl: process.env.POKEAPI_BASE_URL || 'https://pokeapi.co/api/v2'
+    pokeapiBaseUrl: process.env.POKEAPI_BASE_URL || 'https://pokeapi.co/api/v2',
+    // Most Pokemon a single visitor can hold, so one visitor cannot grow the database unboundedly.
+    maxCollectionSize: 1000
   }
 })
