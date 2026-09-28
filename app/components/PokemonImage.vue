@@ -19,6 +19,14 @@ const showBadge = computed(() => props.shiny && !failed.value && !!src.value)
 function onError() {
   if (!failed.value && props.url && defaultImageFallback(props.url)) failed.value = true
 }
+
+// A server-rendered <img> can fail to load before Vue hydrates and attaches @error, so that
+// event is missed. Check once on mount for an image that has already finished loading as broken.
+const img = ref<HTMLImageElement | null>(null)
+onMounted(() => {
+  const el = img.value
+  if (el && el.complete && el.naturalWidth === 0) onError()
+})
 </script>
 
 <template>
@@ -28,6 +36,7 @@ function onError() {
   >
     <img
       v-if="src"
+      ref="img"
       :src="src"
       :alt="alt"
       loading="lazy"

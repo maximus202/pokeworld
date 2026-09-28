@@ -32,4 +32,24 @@ describe('PokemonImage', () => {
     const wrapper = await mountSuspended(PokemonImage, { props: { url: null, shiny: true, alt: 'Missing' } })
     expect(wrapper.find('[data-testid="shiny-badge"]').exists()).toBe(false)
   })
+
+  it('falls back when the image had already failed before the component mounted (server-rendered)', async () => {
+    // Simulates the browser having loaded the SSR <img> and failed it before hydration.
+    const proto = HTMLImageElement.prototype
+    const complete = Object.getOwnPropertyDescriptor(proto, 'complete')
+    const naturalWidth = Object.getOwnPropertyDescriptor(proto, 'naturalWidth')
+    Object.defineProperty(proto, 'complete', { configurable: true, get: () => true })
+    Object.defineProperty(proto, 'naturalWidth', { configurable: true, get: () => 0 })
+    try {
+      const wrapper = await mountSuspended(PokemonImage, { props: { url: SHINY, shiny: true, alt: 'Bulbasaur' } })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('img').attributes('src')).toBe(DEFAULT)
+      expect(wrapper.find('[data-testid="shiny-badge"]').exists()).toBe(false)
+    } finally {
+      if (complete) Object.defineProperty(proto, 'complete', complete)
+      else delete (proto as unknown as Record<string, unknown>).complete
+      if (naturalWidth) Object.defineProperty(proto, 'naturalWidth', naturalWidth)
+      else delete (proto as unknown as Record<string, unknown>).naturalWidth
+    }
+  })
 })

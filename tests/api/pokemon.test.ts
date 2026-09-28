@@ -13,7 +13,7 @@ describe('GET /api/pokemon', () => {
   it('returns items with id, name, imageUrl and shiny, plus the total', async () => {
     const { status, body } = await list()
     expect(status).toBe(200)
-    expect(body.total).toBe(13)
+    expect(body.total).toBe(30)
     expect(body.items[0]).toEqual({
       id: 1,
       name: 'bulbasaur',
@@ -24,18 +24,18 @@ describe('GET /api/pokemon', () => {
 
   it('pages through the list without gaps or repeats', async () => {
     const seen: string[] = []
-    for (let offset = 0; offset < 13; offset += 5) {
+    for (let offset = 0; offset < 30; offset += 5) {
       const { body } = await list(`?limit=5&offset=${offset}`)
       seen.push(...body.items.map(i => i.name))
     }
     const all = (await list('?limit=100')).body.items.map(i => i.name)
     expect(seen).toEqual(all)
-    expect(new Set(seen).size).toBe(13)
+    expect(new Set(seen)).toHaveProperty('size', 30)
   })
 
   it('clamps limit and ignores bad numbers', async () => {
     expect((await list('?limit=0')).body.items).toHaveLength(1)
-    expect((await list('?limit=abc&offset=-4')).body.items).toHaveLength(13)
+    expect((await list('?limit=abc&offset=-4')).body.items).toHaveLength(24)
   })
 
   it('searches by case-insensitive substring', async () => {
