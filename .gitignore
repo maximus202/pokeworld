@@ -1,0 +1,25 @@
+# Nuxt build output
+.output
+.data
+.nuxt
+.nuxtrc
+.nitro
+.cache
+dist
+
+node_modules
+logs
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Local data and test output
+data/
+test-results/
+playwright-report/
+
+# Editor
+.vscode/
+.idea/
