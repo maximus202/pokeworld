@@ -1,0 +1,23 @@
+{
+  "name": "fire",
+  "pokemon": [
+    {
+      "pokemon": {
+        "name": "charmander"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "charmeleon"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "charizard"
+      },
+      "slot": 1
+    }
+  ]
+}

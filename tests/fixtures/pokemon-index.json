@@ -1,0 +1,131 @@
+{
+  "count": 31,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "name": "bulbasaur",
+      "url": "https://pokeapi.co/api/v2/pokemon/1/"
+    },
+    {
+      "name": "ivysaur",
+      "url": "https://pokeapi.co/api/v2/pokemon/2/"
+    },
+    {
+      "name": "venusaur",
+      "url": "https://pokeapi.co/api/v2/pokemon/3/"
+    },
+    {
+      "name": "charmander",
+      "url": "https://pokeapi.co/api/v2/pokemon/4/"
+    },
+    {
+      "name": "charmeleon",
+      "url": "https://pokeapi.co/api/v2/pokemon/5/"
+    },
+    {
+      "name": "charizard",
+      "url": "https://pokeapi.co/api/v2/pokemon/6/"
+    },
+    {
+      "name": "squirtle",
+      "url": "https://pokeapi.co/api/v2/pokemon/7/"
+    },
+    {
+      "name": "wartortle",
+      "url": "https://pokeapi.co/api/v2/pokemon/8/"
+    },
+    {
+      "name": "blastoise",
+      "url": "https://pokeapi.co/api/v2/pokemon/9/"
+    },
+    {
+      "name": "lotad",
+      "url": "https://pokeapi.co/api/v2/pokemon/270/"
+    },
+    {
+      "name": "lombre",
+      "url": "https://pokeapi.co/api/v2/pokemon/271/"
+    },
+    {
+      "name": "ludicolo",
+      "url": "https://pokeapi.co/api/v2/pokemon/272/"
+    },
+    {
+      "name": "spriteonly",
+      "url": "https://pokeapi.co/api/v2/pokemon/9001/"
+    },
+    {
+      "name": "filler-01",
+      "url": "https://pokeapi.co/api/v2/pokemon/9002/"
+    },
+    {
+      "name": "filler-02",
+      "url": "https://pokeapi.co/api/v2/pokemon/9003/"
+    },
+    {
+      "name": "filler-03",
+      "url": "https://pokeapi.co/api/v2/pokemon/9004/"
+    },
+    {
+      "name": "filler-04",
+      "url": "https://pokeapi.co/api/v2/pokemon/9005/"
+    },
+    {
+      "name": "filler-05",
+      "url": "https://pokeapi.co/api/v2/pokemon/9006/"
+    },
+    {
+      "name": "filler-06",
+      "url": "https://pokeapi.co/api/v2/pokemon/9007/"
+    },
+    {
+      "name": "filler-07",
+      "url": "https://pokeapi.co/api/v2/pokemon/9008/"
+    },
+    {
+      "name": "filler-08",
+      "url": "https://pokeapi.co/api/v2/pokemon/9009/"
+    },
+    {
+      "name": "filler-09",
+      "url": "https://pokeapi.co/api/v2/pokemon/9010/"
+    },
+    {
+      "name": "filler-10",
+      "url": "https://pokeapi.co/api/v2/pokemon/9011/"
+    },
+    {
+      "name": "filler-11",
+      "url": "https://pokeapi.co/api/v2/pokemon/9012/"
+    },
+    {
+      "name": "filler-12",
+      "url": "https://pokeapi.co/api/v2/pokemon/9013/"
+    },
+    {
+      "name": "filler-13",
+      "url": "https://pokeapi.co/api/v2/pokemon/9014/"
+    },
+    {
+      "name": "filler-14",
+      "url": "https://pokeapi.co/api/v2/pokemon/9015/"
+    },
+    {
+      "name": "filler-15",
+      "url": "https://pokeapi.co/api/v2/pokemon/9016/"
+    },
+    {
+      "name": "filler-16",
+      "url": "https://pokeapi.co/api/v2/pokemon/9017/"
+    },
+    {
+      "name": "filler-17",
+      "url": "https://pokeapi.co/api/v2/pokemon/9018/"
+    },
+    {
+      "name": "deoxys-attack",
+      "url": "https://pokeapi.co/api/v2/pokemon/10001/"
+    }
+  ]
+}
