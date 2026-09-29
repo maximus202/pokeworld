@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { VISITOR_COOKIE } from '../../server/utils/visitor'
+import { VISITOR_COOKIE } from '../../server/utils/visitorIdentity'
 import { baseUrl, cookieIn, visitor } from './helpers'
 
 // Stricter than what the middleware accepts: it must only ever *issue* v4 UUIDs.

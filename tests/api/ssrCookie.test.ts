@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { VISITOR_COOKIE } from '../../server/utils/visitor'
+import { VISITOR_COOKIE } from '../../server/utils/visitorIdentity'
 import { baseUrl, cookieIn, visitor } from './helpers'
 
 const labelIn = (html: string) => html.match(/data-testid="visitor-label"[^>]*>([^<]*)</)?.[1]

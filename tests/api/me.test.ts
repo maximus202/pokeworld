@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { VISITOR_COOKIE } from '../../server/utils/visitor'
+import { VISITOR_COOKIE } from '../../server/utils/visitorIdentity'
 import { baseUrl, visitor } from './helpers'
 
 describe('GET /api/me', () => {
