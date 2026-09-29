@@ -56,6 +56,17 @@ describe('fixture server', () => {
     expect((await get('/pokemon/lotad')).status).toBe(200)
   })
 
+  it('returns only a small first page of a list endpoint unless a limit is given', async () => {
+    expect((await (await get('/type')).json()).results.length).toBeLessThan(21)
+    expect((await (await get('/type?limit=100')).json()).results).toHaveLength(21)
+  })
+
+  it('can return a 200 with a body of the wrong shape, once', async () => {
+    await control.failNext('/type/fire', 'garbage')
+    expect(await (await get('/type/fire')).json()).toEqual({ unexpected: true })
+    expect((await (await get('/type/fire')).json()).pokemon).toBeTruthy()
+  })
+
   it('rejects unknown control actions and non-POST control calls', async () => {
     const unknown = await fetch(`${server.url}/__control/fial`, { method: 'POST' })
     expect(unknown.status).toBe(400)
@@ -66,7 +77,7 @@ describe('fixture server', () => {
 
 describe('fixture shapes match PokeAPI', () => {
   it('type index count matches its results and includes the types the app must exclude', async () => {
-    const body = await (await get('/type')).json()
+    const body = await (await get('/type?limit=100')).json()
     const names = body.results.map((t: { name: string }) => t.name)
     expect(body.count).toBe(names.length)
     expect(names).toEqual(expect.arrayContaining(['grass', 'unknown', 'shadow', 'stellar']))

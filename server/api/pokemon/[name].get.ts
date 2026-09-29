@@ -1,3 +1,1 @@
-export default defineEventHandler(async (event) => {
-  return toDetails(await getPokemon(getRouterParam(event, 'name')!.toLowerCase()))
-})
+export default defineEventHandler(event => getPokemon(getRouterParam(event, 'name')!.toLowerCase()))

@@ -1,17 +1,21 @@
 const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 100
 
-/** A whole-number query parameter clamped to [min, max], or `fallback` when missing or not a number. */
+/** A query parameter as a string: the first value if it is repeated, '' if it is missing. */
+const first = (value: unknown) => String(Array.isArray(value) ? value[0] : (value ?? ''))
+
+/** A whole-number query parameter clamped to [min, max], or `fallback` when missing or not a whole number. */
 function intParam(value: unknown, fallback: number, min: number, max: number) {
-  const n = Number.parseInt(String(value), 10)
-  return Number.isNaN(n) ? fallback : Math.min(max, Math.max(min, n))
+  const raw = first(value)
+  const n = raw === '' ? Number.NaN : Number(raw)
+  return Number.isInteger(n) ? Math.min(max, Math.max(min, n)) : fallback
 }
 
 export default defineEventHandler((event) => {
   const query = getQuery(event)
   return queryPokemon({
-    q: String(query.q ?? ''),
-    type: query.type ? String(query.type) : undefined,
+    q: first(query.q),
+    type: first(query.type).trim().toLowerCase() || undefined,
     limit: intParam(query.limit, DEFAULT_LIMIT, 1, MAX_LIMIT),
     offset: intParam(query.offset, 0, 0, Number.MAX_SAFE_INTEGER),
   })

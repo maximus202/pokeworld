@@ -89,6 +89,15 @@ describe('GET /api/pokemon', () => {
     expect((await list('?limit=abc&offset=-5')).body.items).toHaveLength(24)
   })
 
+  it.each(['5abc', '5.9', ''])('ignores the non-whole-number limit "%s"', async (limit) => {
+    expect((await list(`?limit=${limit}`)).body.items).toHaveLength(24)
+  })
+
+  it('uses the first value when a parameter is repeated', async () => {
+    expect(names(await list('?q=bulb&q=char'))).toEqual(['bulbasaur'])
+    expect((await list('?type=grass&type=fire')).body.total).toBe(6)
+  })
+
   it('searches names case-insensitively by substring', async () => {
     expect(names(await list('?q=BULB'))).toEqual(['bulbasaur'])
     expect(names(await list('?q=saur'))).toEqual(['bulbasaur', 'ivysaur', 'venusaur'])
@@ -105,6 +114,10 @@ describe('GET /api/pokemon', () => {
   it('combines the type filter with search', async () => {
     expect(names(await list('?type=grass&q=lot'))).toEqual(['lotad'])
     expect((await list('?type=fire&q=lot')).body.total).toBe(0)
+  })
+
+  it.each(['Grass', ' GRASS '])('matches the type "%s" case-insensitively', async (type) => {
+    expect((await list(`?type=${encodeURIComponent(type)}`)).body.total).toBe(6)
   })
 
   it.each(['nope', 'unknown', 'shadow'])('returns 404 for the type "%s"', async (type) => {

@@ -37,12 +37,22 @@ describe('PokeAPI caching', () => {
   })
 
   it('does not cache a failure: a type filter fails with 502, then succeeds', async () => {
-    await v.request('/api/pokemon') // warm the index and the type list
+    await Promise.all([v.request('/api/pokemon'), v.request('/api/types')]) // warm the index and the type list
     await fixture().failNext('/type/water')
 
     expect((await v.json('/api/pokemon?type=water')).status).toBe(502)
     const retried = await v.json<{ total: number }>('/api/pokemon?type=water')
     expect(retried.status).toBe(200)
     expect(retried.body.total).toBe(6)
+  })
+
+  it('answers a 502, not a 500, when PokeAPI returns a body of the wrong shape, and does not cache it', async () => {
+    await Promise.all([v.request('/api/pokemon'), v.request('/api/types')])
+    await fixture().failNext('/type/normal', 'garbage')
+
+    const bad = await v.json<{ statusMessage: string }>('/api/pokemon?type=normal')
+    expect(bad.status).toBe(502)
+    expect(bad.body.statusMessage).toBe('PokeAPI request failed')
+    expect((await v.json<{ total: number }>('/api/pokemon?type=normal')).body.total).toBe(1)
   })
 })

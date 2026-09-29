@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import type { AddressInfo } from 'node:net'
 
 const dir = dirname(fileURLToPath(import.meta.url))
+const DEFAULT_PAGE_SIZE = 5
 
 export interface FixtureServer {
   url: string
@@ -28,12 +29,13 @@ function fileFor(path: string): string | undefined {
  *
  *   POST /__control/reset                 clear counts and failures
  *   POST /__control/fail?path=/pokemon/x  the next request for that path returns 500
+ *   POST /__control/fail?path=/x&mode=garbage  ...or a 200 whose body is not the expected shape
  *   POST /__control/fail-all?on=1|0       every request returns 500 (or stop doing so)
  *   GET  /__control/counts                { "/pokemon/bulbasaur": 1, ... }
  */
 export async function startFixtureServer(port = 0): Promise<FixtureServer> {
   const counts: Record<string, number> = {}
-  const failNext = new Set<string>()
+  const failNext = new Map<string, 'error' | 'garbage'>()
   let failAll = false
 
   const server: Server = createServer((req, res) => {
@@ -51,7 +53,7 @@ export async function startFixtureServer(port = 0): Promise<FixtureServer> {
         failNext.clear()
         failAll = false
       } else if (action === 'fail') {
-        failNext.add(url.searchParams.get('path') ?? '')
+        failNext.set(url.searchParams.get('path') ?? '', url.searchParams.get('mode') === 'garbage' ? 'garbage' : 'error')
       } else if (action === 'fail-all') {
         failAll = url.searchParams.get('on') !== '0'
       } else if (action === 'counts') {
@@ -64,13 +66,18 @@ export async function startFixtureServer(port = 0): Promise<FixtureServer> {
 
     counts[url.pathname] = (counts[url.pathname] ?? 0) + 1
     // Consume a queued failure even while failAll is on, so it cannot fire later.
-    const queued = failNext.delete(url.pathname)
-    if (failAll || queued) return send(500, { error: 'fixture failure' })
+    const queued = failNext.get(url.pathname)
+    failNext.delete(url.pathname)
+    if (failAll || queued === 'error') return send(500, { error: 'fixture failure' })
+    if (queued === 'garbage') return send(200, { unexpected: true })
 
     const file = fileFor(url.pathname)
     if (!file) return send(404, { error: 'not found' })
-    res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(readFileSync(file))
+    const body = JSON.parse(readFileSync(file, 'utf8'))
+    // Like PokeAPI, list endpoints return only a small first page unless the caller sets `limit`.
+    // The page is kept smaller than the fixtures so a request that forgets `limit` is caught.
+    if (Array.isArray(body.results)) body.results = body.results.slice(0, Number(url.searchParams.get('limit') ?? DEFAULT_PAGE_SIZE))
+    send(200, body)
   })
 
   await new Promise<void>(resolve => server.listen(port, '127.0.0.1', resolve))
@@ -86,7 +93,7 @@ export function fixtureControl(url: string) {
   const post = (path: string) => fetch(`${url}/__control/${path}`, { method: 'POST' })
   return {
     reset: () => post('reset'),
-    failNext: (path: string) => post(`fail?path=${encodeURIComponent(path)}`),
+    failNext: (path: string, mode: 'error' | 'garbage' = 'error') => post(`fail?path=${encodeURIComponent(path)}&mode=${mode}`),
     failAll: (on = true) => post(`fail-all?on=${on ? 1 : 0}`),
     counts: async (): Promise<Record<string, number>> => (await fetch(`${url}/__control/counts`)).json()
   }

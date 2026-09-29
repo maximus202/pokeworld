@@ -1,21 +1,13 @@
-import type { PokemonDetails, PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
-import { pickImage } from './pickImage'
-import { getPokemonIndex, getTypeMembers, getTypeNames, type PokeApiPokemon, type PokedexEntry } from './pokeapi'
+import type { PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
+import { getPokemonIndex, getTypeMembers, getTypeNames, type PokedexEntry } from './pokeapi'
 
 const ARTWORK_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork'
 
-export function toDetails(pokemon: PokeApiPokemon): PokemonDetails {
-  return {
-    id: pokemon.id,
-    name: pokemon.name,
-    height: pokemon.height,
-    abilities: pokemon.abilities.map(a => a.ability.name),
-    types: pokemon.types.map(t => t.type.name),
-    image: pickImage(pokemon),
-  }
-}
-
-/** List items are built from the index alone, so a page needs no request per Pokemon. */
+/**
+ * List items are built from the index alone, so a page needs no request per Pokemon. This means
+ * `shiny` follows the grass rule without checking that a shiny image exists; the details route
+ * can differ for a grass Pokemon with none, and the browser falls back to the default image.
+ */
 export function toListItem({ id, name }: PokedexEntry, grass: Set<string>): PokemonListItem {
   const shiny = grass.has(name)
   return { id, name, shiny, imageUrl: `${ARTWORK_URL}/${shiny ? 'shiny/' : ''}${id}.png` }
