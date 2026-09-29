@@ -47,4 +47,34 @@ describe('fixture server', () => {
     await control.failAll(false)
     expect((await get('/pokemon/bulbasaur')).status).toBe(200)
   })
+
+  it('does not let a queued failure fire after fail-all is switched off', async () => {
+    await control.failNext('/pokemon/lotad')
+    await control.failAll()
+    expect((await get('/pokemon/lotad')).status).toBe(500)
+    await control.failAll(false)
+    expect((await get('/pokemon/lotad')).status).toBe(200)
+  })
+
+  it('rejects unknown control actions and non-POST control calls', async () => {
+    const unknown = await fetch(`${server.url}/__control/fial`, { method: 'POST' })
+    expect(unknown.status).toBe(400)
+    const wrongMethod = await fetch(`${server.url}/__control/reset`)
+    expect(wrongMethod.status).toBe(405)
+  })
+})
+
+describe('fixture shapes match PokeAPI', () => {
+  it('type index count matches its results and includes the types the app must exclude', async () => {
+    const body = await (await get('/type')).json()
+    const names = body.results.map((t: { name: string }) => t.name)
+    expect(body.count).toBe(names.length)
+    expect(names).toEqual(expect.arrayContaining(['grass', 'unknown', 'shadow', 'stellar']))
+  })
+
+  it('a Pokemon without artwork still has an official-artwork object with null images', async () => {
+    const body = await (await get('/pokemon/spriteonly')).json()
+    expect(body.sprites.other['official-artwork']).toEqual({ front_default: null, front_shiny: null })
+    expect(body.sprites.front_default).toBeTruthy()
+  })
 })

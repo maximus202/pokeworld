@@ -19,6 +19,11 @@
   "sprites": {
     "front_default": "https://example.test/spriteonly.png",
     "front_shiny": "https://example.test/spriteonly-shiny.png",
-    "other": {}
+    "other": {
+      "official-artwork": {
+        "front_default": null,
+        "front_shiny": null
+      }
+    }
   }
 }
