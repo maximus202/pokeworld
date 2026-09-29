@@ -1,0 +1,23 @@
+{
+  "name": "poison",
+  "pokemon": [
+    {
+      "pokemon": {
+        "name": "bulbasaur"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "ivysaur"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "venusaur"
+      },
+      "slot": 1
+    }
+  ]
+}
