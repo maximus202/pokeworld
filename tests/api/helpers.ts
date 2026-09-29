@@ -1,6 +1,6 @@
 import { inject } from 'vitest'
 import { fixtureControl } from '../fixtures/server'
-import { VISITOR_COOKIE } from '../../server/utils/visitor'
+import { VISITOR_COOKIE } from '../../server/utils/visitorIdentity'
 
 export const baseUrl = () => inject('baseUrl')
 export const fixture = () => fixtureControl(inject('fixtureUrl'))

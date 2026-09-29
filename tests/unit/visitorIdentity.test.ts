@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { H3Event } from 'h3'
-import { requireVisitorId, visitorLabel } from '../../server/utils/visitor'
+import { requireVisitorId, visitorLabel } from '../../server/utils/visitorIdentity'
 
 const eventWith = (context: Record<string, unknown>) => ({ context }) as unknown as H3Event
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { VISITOR_COOKIE } from '../../server/utils/visitorIdentity'
 import { baseUrl, cookieIn, visitor } from './helpers'
 
 const labelIn = (html: string) => html.match(/data-testid="visitor-label"[^>]*>([^<]*)</)?.[1]
@@ -18,4 +19,17 @@ describe('first-visit SSR cookie (spike)', () => {
     expect(cookieIn(res)).toBeUndefined()
     expect(labelIn(await res.text())).toBe(`Trainer #${v.id!.slice(0, 4)}`)
   })
+
+  it.each([['empty', ''], ['malformed', 'abc']])(
+    'renders the replacement visitor when the incoming cookie is %s',
+    async (_name, value) => {
+      const res = await fetch(baseUrl(), {
+        headers: { cookie: `${VISITOR_COOKIE}=${value}` },
+        redirect: 'manual',
+      })
+      const id = cookieIn(res)
+      expect(id).toBeTruthy()
+      expect(labelIn(await res.text())).toBe(`Trainer #${id!.slice(0, 4)}`)
+    },
+  )
 })
