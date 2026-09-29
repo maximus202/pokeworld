@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { baseUrl, visitor } from './helpers'
+import { baseUrl, cookieIn, visitor } from './helpers'
 
 const labelIn = (html: string) => html.match(/data-testid="visitor-label"[^>]*>([^<]*)</)?.[1]
-const cookieIn = (res: Response) => res.headers.get('set-cookie')?.match(/pokeworld_visitor=([^;]+)/)?.[1]
 
 describe('first-visit SSR cookie (spike)', () => {
   it('renders the same visitor the response sets as a cookie', async () => {
