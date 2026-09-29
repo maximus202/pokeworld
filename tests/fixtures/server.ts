@@ -45,6 +45,7 @@ export async function startFixtureServer(port = 0): Promise<FixtureServer> {
 
     if (url.pathname.startsWith('/__control/')) {
       const action = url.pathname.slice('/__control/'.length)
+      if (req.method !== 'POST' && action !== 'counts') return send(405, { error: 'use POST' })
       if (action === 'reset') {
         for (const k of Object.keys(counts)) delete counts[k]
         failNext.clear()
@@ -55,12 +56,16 @@ export async function startFixtureServer(port = 0): Promise<FixtureServer> {
         failAll = url.searchParams.get('on') !== '0'
       } else if (action === 'counts') {
         return send(200, counts)
+      } else {
+        return send(400, { error: `unknown control action: ${action}` })
       }
       return send(200, { ok: true })
     }
 
     counts[url.pathname] = (counts[url.pathname] ?? 0) + 1
-    if (failAll || failNext.delete(url.pathname)) return send(500, { error: 'fixture failure' })
+    // Consume a queued failure even while failAll is on, so it cannot fire later.
+    const queued = failNext.delete(url.pathname)
+    if (failAll || queued) return send(500, { error: 'fixture failure' })
 
     const file = fileFor(url.pathname)
     if (!file) return send(404, { error: 'not found' })
