@@ -27,13 +27,17 @@ export function isGrass(pokemon: Pick<PokeApiImageSource, 'types'>): boolean {
 
 /**
  * Grass Pokemon get the shiny image; everything else gets the default one.
- * Official artwork is preferred, with the plain sprite as the fallback.
- * `shiny` describes which image was requested for the type rule, and stays true even when the
- * shiny URL is missing and there is no image to show.
+ * Official artwork is preferred, with the plain sprite as the fallback. If a grass Pokemon has
+ * no shiny image at all, the default image is shown and `shiny` is false, so the badge is not
+ * shown on an image that is not shiny.
  */
 export function pickImage(pokemon: PokeApiImageSource): PokemonImage {
-  const shiny = isGrass(pokemon)
-  const key = shiny ? 'front_shiny' : 'front_default'
-  const artwork = pokemon.sprites.other?.['official-artwork']?.[key]
-  return { url: artwork || pokemon.sprites[key] || null, shiny }
+  const artwork = pokemon.sprites.other?.['official-artwork']
+  const urlFor = (key: 'front_default' | 'front_shiny') => artwork?.[key] || pokemon.sprites[key] || null
+
+  if (isGrass(pokemon)) {
+    const shinyUrl = urlFor('front_shiny')
+    if (shinyUrl) return { url: shinyUrl, shiny: true }
+  }
+  return { url: urlFor('front_default'), shiny: false }
 }
