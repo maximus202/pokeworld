@@ -16,6 +16,7 @@ export default defineEventHandler((event) => {
   return queryPokemon({
     q: first(query.q),
     type: first(query.type).trim().toLowerCase() || undefined,
+    only: first(query.caught) === 'true' ? new Set(useCollectionStore().list(requireVisitorId(event)).map(e => e.name)) : undefined,
     limit: intParam(query.limit, DEFAULT_LIMIT, 1, MAX_LIMIT),
     offset: intParam(query.offset, 0, 0, Number.MAX_SAFE_INTEGER),
   })

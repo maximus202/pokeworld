@@ -4,7 +4,7 @@ import { fixture, visitor } from './helpers'
 const v = visitor()
 
 // The server caches for the life of the process and is shared by every test, so each test here
-// either warms a request first or uses a resource no other test touches (squirtle, type/water).
+// either warms a request first or uses a resource no other test touches (wartortle, type/water).
 describe('PokeAPI caching', () => {
   it('serves repeated details, list, search and type requests without asking PokeAPI again', async () => {
     const requests = ['/api/types', '/api/pokemon/bulbasaur', '/api/pokemon?limit=5', '/api/pokemon?q=lot&type=fire']
@@ -27,13 +27,13 @@ describe('PokeAPI caching', () => {
 
   it('does not cache a failure: a details request fails with 502, then succeeds', async () => {
     await v.request('/api/pokemon/bulbasaur') // warm the index
-    await fixture().failNext('/pokemon/squirtle')
+    await fixture().failNext('/pokemon/wartortle')
 
-    const failed = await v.json<{ statusMessage: string }>('/api/pokemon/squirtle')
+    const failed = await v.json<{ statusMessage: string }>('/api/pokemon/wartortle')
     expect(failed.status).toBe(502)
     expect(failed.body.statusMessage).toBe('PokeAPI request failed')
-    expect((await v.json('/api/pokemon/squirtle')).status).toBe(200)
-    expect((await fixture().counts())['/pokemon/squirtle']).toBe(2) // one attempt each, no hidden retry
+    expect((await v.json('/api/pokemon/wartortle')).status).toBe(200)
+    expect((await fixture().counts())['/pokemon/wartortle']).toBe(2) // one attempt each, no hidden retry
   })
 
   it('does not cache a failure: a type filter fails with 502, then succeeds', async () => {
