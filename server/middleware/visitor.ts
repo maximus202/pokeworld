@@ -1,4 +1,3 @@
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const ONE_YEAR = 60 * 60 * 24 * 365
 
 /**
@@ -7,24 +6,26 @@ const ONE_YEAR = 60 * 60 * 24 * 365
  * row is created here; a row is written only when the visitor catches something.
  */
 export default defineEventHandler((event) => {
-  // Nuxt-internal routes (/__nuxt_error, /__nuxt_island, ...) are not visitor traffic.
-  if (event.path.startsWith('/_')) return
+  if (!isVisitorTraffic(event.path)) return
 
   const existing = getCookie(event, VISITOR_COOKIE)
-  if (existing && UUID.test(existing)) {
+  if (existing && VISITOR_ID_PATTERN.test(existing)) {
     event.context.visitorId = existing.toLowerCase()
     return
   }
 
   const visitorId = crypto.randomUUID()
+  const https = isHttpsRequest(
+    getRequestHeader(event, 'x-forwarded-proto'),
+    Boolean((event.node.req.socket as { encrypted?: boolean }).encrypted),
+  )
   setCookie(event, VISITOR_COOKIE, visitorId, {
     httpOnly: true,
     sameSite: 'lax',
     maxAge: ONE_YEAR,
     path: '/',
     // Secure only in production over https, so `npm run preview` on http://localhost still works.
-    secure: process.env.NODE_ENV === 'production'
-      && getRequestProtocol(event, { xForwardedProto: true }) === 'https',
+    secure: process.env.NODE_ENV === 'production' && https,
   })
   event.context.visitorId = visitorId
 
@@ -33,9 +34,5 @@ export default defineEventHandler((event) => {
   // so each sub-request would mint a different visitor. Put the new ID there instead.
   // This reaches into the Node request object, which is fine for the node-server preset the
   // app deploys with. It would need another route on an edge runtime, where event.node is absent.
-  const others = (event.node.req.headers.cookie ?? '')
-    .split(';')
-    .map(c => c.trim())
-    .filter(c => c && !c.startsWith(`${VISITOR_COOKIE}=`))
-  event.node.req.headers.cookie = [...others, `${VISITOR_COOKIE}=${visitorId}`].join('; ')
+  event.node.req.headers.cookie = withVisitorCookie(event.node.req.headers.cookie, visitorId)
 })

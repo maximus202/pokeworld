@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { VISITOR_COOKIE } from '../../server/utils/visitor'
 import { baseUrl, cookieIn, visitor } from './helpers'
 
 const labelIn = (html: string) => html.match(/data-testid="visitor-label"[^>]*>([^<]*)</)?.[1]
@@ -23,7 +24,7 @@ describe('first-visit SSR cookie (spike)', () => {
     'renders the replacement visitor when the incoming cookie is %s',
     async (_name, value) => {
       const res = await fetch(baseUrl(), {
-        headers: { cookie: `pokeworld_visitor=${value}` },
+        headers: { cookie: `${VISITOR_COOKIE}=${value}` },
         redirect: 'manual',
       })
       const id = cookieIn(res)

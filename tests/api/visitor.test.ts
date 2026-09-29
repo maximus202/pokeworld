@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { VISITOR_COOKIE } from '../../server/utils/visitor'
 import { baseUrl, cookieIn, visitor } from './helpers'
 
+// Stricter than what the middleware accepts: it must only ever *issue* v4 UUIDs.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 const setCookie = (res: Response) => res.headers.get('set-cookie') ?? ''
 const withCookie = (value: string) =>
-  fetch(`${baseUrl()}/api/me`, { headers: { cookie: `pokeworld_visitor=${value}` } })
+  fetch(`${baseUrl()}/api/me`, { headers: { cookie: `${VISITOR_COOKIE}=${value}` } })
 
 describe('visitor cookie', () => {
   it('issues a UUID cookie to a request that has none', async () => {
@@ -55,8 +57,23 @@ describe('visitor cookie', () => {
     expect(a.id).not.toBe(b.id)
   })
 
-  it('does not issue cookies on Nuxt-internal routes', async () => {
-    const res = await fetch(`${baseUrl()}/__nuxt_error`, { redirect: 'manual' })
-    expect(res.headers.get('set-cookie')).toBeNull()
+  it.each(['/__nuxt_error', '/favicon.ico', '/robots.txt', '/.well-known/security.txt'])(
+    'does not issue a cookie for %s',
+    async (path) => {
+      const res = await fetch(`${baseUrl()}${path}`, { redirect: 'manual' })
+      expect(res.headers.get('set-cookie')).toBeNull()
+    },
+  )
+
+  it('still issues a cookie for an /api route that does not exist', async () => {
+    const res = await fetch(`${baseUrl()}/api/nope`)
+    expect(cookieIn(res)).toMatch(UUID)
+  })
+
+  it('forwards the new ID to the render: unrelated cookies are kept and the bad visitor cookie is replaced', async () => {
+    const res = await fetch(baseUrl(), { headers: { cookie: `theme=dark; ${VISITOR_COOKIE}=abc` } })
+    const id = cookieIn(res)
+    expect(id).toMatch(UUID)
+    expect(await res.text()).toContain(`Trainer #${id!.slice(0, 4)}`)
   })
 })

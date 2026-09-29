@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { VISITOR_COOKIE } from '../../server/utils/visitor'
 import { baseUrl, visitor } from './helpers'
 
 describe('GET /api/me', () => {
@@ -26,7 +27,7 @@ describe('GET /api/me', () => {
 
   it('lower-cases an upper-case UUID from the cookie', async () => {
     const id = '0A1B2C3D-0000-4000-8000-000000000000'
-    const res = await fetch(`${baseUrl()}/api/me`, { headers: { cookie: `pokeworld_visitor=${id}` } })
+    const res = await fetch(`${baseUrl()}/api/me`, { headers: { cookie: `${VISITOR_COOKIE}=${id}` } })
     expect(res.headers.get('set-cookie')).toBeNull()
     expect(await res.json()).toEqual({ label: 'Trainer #0a1b' })
   })
