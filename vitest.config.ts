@@ -16,6 +16,7 @@ export default defineConfig({
           name: 'api',
           include: ['tests/api/**/*.test.ts'],
           environment: 'node',
+          globalSetup: ['tests/api/global-setup.ts'],
           testTimeout: 15000,
           // One shared server and in-memory database; each test uses its own visitor.
           fileParallelism: false,
