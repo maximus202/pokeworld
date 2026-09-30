@@ -29,6 +29,7 @@ registerEndpoint('/api/collection', {
     if (readFails) throw createError({ statusCode: 500 })
     const snapshot = server
     await gates.shift()
+    if (readFails) throw createError({ statusCode: 500 }) // also for a read that was held while the switch was turned on
     return { count: snapshot.length, items: snapshot }
   },
 })
@@ -157,6 +158,22 @@ describe('useCollection', () => {
     releaseOlder()
     await older
 
+    expect(collection.items.value.map(i => i.name)).toEqual(['bulbasaur', 'lotad'])
+  })
+
+  it('does not report a failure from an older read once a newer read has succeeded', async () => {
+    const collection = useCollection()
+    let releaseOlder!: () => void
+    gates = [new Promise(resolve => (releaseOlder = resolve))]
+    const older = collection.refresh() // held; sees only lotad
+    await vi.waitFor(() => expect(reads).toBe(1))
+    server = [item('bulbasaur', '2026-09-28T14:00:00.000Z'), item('lotad', '2026-09-27T10:00:00.000Z')]
+    await collection.refresh() // newer, succeeds
+
+    readFails = true // every read now fails, including the older one (and the browser's single retry of it)
+    releaseOlder()
+
+    await expect(older).resolves.toBeUndefined() // a failure nobody is waiting on is not an error
     expect(collection.items.value.map(i => i.name)).toEqual(['bulbasaur', 'lotad'])
   })
 })

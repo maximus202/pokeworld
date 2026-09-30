@@ -36,6 +36,15 @@ test.describe('search', () => {
     await expect(cards(page)).toHaveCount(1)
   })
 
+  test('matches the name the way it is shown on the card', async ({ page }) => {
+    await page.goto('/')
+
+    await search(page).fill('filler 01') // shown as "Filler 01"; the raw name is "filler-01"
+
+    await expect(cards(page)).toHaveCount(1)
+    await expect(card(page, 'filler-01')).toContainText('Filler 01')
+  })
+
   test('says "No matches" with the query, and clearing the filters restores the list', async ({ page }) => {
     await page.goto('/')
 

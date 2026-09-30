@@ -8,7 +8,7 @@ As a user, I want to be able to:
     - [x] The list loads in pages, with a "Load more" control that shows how many are left
     - [x] If the list fails to load, I see an error with a way to try again
 - [x] Search for Pokemon by name so I can find a specific Pokemon
-    - [x] Matching is a case-insensitive substring match, and results update as I type
+    - [x] Matching is a case-insensitive substring match on the name as it is shown, and results update as I type
     - [x] If nothing matches, I see a "no matches" message, and clearing the search restores the list
 - [x] Filter the list by type so I can discover Pokemon I didn't know to search for
     - [x] Filtering by type works together with search

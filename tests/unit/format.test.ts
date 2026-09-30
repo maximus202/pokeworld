@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { displayName, formatCaughtDate, formatCaughtDateTime, formatHeight } from '../../app/utils/format'
+import { displayName } from '../../shared/utils/displayName'
+import { formatCaughtDate, formatCaughtDateTime, formatHeight } from '../../app/utils/format'
 
 describe('displayName', () => {
   it.each([

@@ -17,8 +17,15 @@ export function useCollection() {
 
   async function refresh() {
     const mine = ++latestRead.value
-    const read = await requestFetch<CollectionResponse>('/api/collection')
-    if (mine === latestRead.value) items.value = read.items // a newer read has started: this one is stale
+    let read: CollectionResponse
+    try {
+      read = await requestFetch<CollectionResponse>('/api/collection')
+    }
+    catch (error) {
+      if (mine === latestRead.value) throw error
+      return // a newer read has started: this one is stale, and so is its failure
+    }
+    if (mine === latestRead.value) items.value = read.items
   }
 
   /** Re-reads after a change that already succeeded, so a failed read is not reported as a failed change. */

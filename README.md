@@ -31,9 +31,9 @@ All optional. They are read through Nuxt's `runtimeConfig`, so these environment
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `NUXT_DB_PATH` | `data/pokeworld.db` | SQLite file. `:memory:` works for throwaway runs |
+| `NUXT_DB_PATH` | `data/pokeworld.db` | SQLite file, relative to the folder you start the server from (so starting it from elsewhere uses a different, empty database). `:memory:` works for throwaway runs |
 | `NUXT_POKEAPI_BASE_URL` | `https://pokeapi.co/api/v2` | Where Pokemon data comes from |
-| `NUXT_MAX_COLLECTION_SIZE` | `1000` | Most Pokemon one visitor can hold |
+| `NUXT_MAX_COLLECTION_SIZE` | `1000` | Most Pokemon one visitor can hold. Must be a whole number of at least 1; anything else makes the app refuse to start a collection, so a typo cannot silently remove the cap |
 | `PORT` | `3000` | Port for the production server (`node .output/server/index.mjs`) |
 
 ## How it works

@@ -1,8 +1,3 @@
-/** "mr-mime" -> "Mr Mime" */
-export function displayName(name: string): string {
-  return name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-}
-
 const INCHES_PER_METRE = 39.3701
 
 /** PokeAPI heights are decimetres: 7 -> "0.7 m (2′04″)" */

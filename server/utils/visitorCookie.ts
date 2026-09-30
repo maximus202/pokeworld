@@ -1,5 +1,6 @@
 import { getCookie, getRequestHeader, setCookie, type H3Event } from 'h3'
 import { VISITOR_COOKIE, VISITOR_ID_PATTERN } from './visitorIdentity'
+import { markPrivate } from './markPrivate'
 import { isHttpsRequest, withVisitorCookie } from './visitorRequest'
 
 const ONE_YEAR = 60 * 60 * 24 * 365
@@ -13,6 +14,7 @@ function existingVisitorId(event: H3Event): string | undefined {
 /** Gives the browser a new visitor ID and makes it visible to this request's sub-requests. */
 function issueVisitorId(event: H3Event): string {
   const id = crypto.randomUUID()
+  markPrivate(event) // this response carries a Set-Cookie: a shared cache must not hand it to another visitor
   const https = isHttpsRequest(
     getRequestHeader(event, 'x-forwarded-proto'),
     Boolean((event.node.req.socket as { encrypted?: boolean }).encrypted),
