@@ -7,6 +7,7 @@ test.describe('details panel', () => {
     await openPanel(page, 'bulbasaur')
 
     await expect(page.getByTestId('panel-name')).toHaveText('Bulbasaur')
+    await expect(page.getByRole('dialog')).toContainText('#0001') // its Pokedex number
     await expect(page.getByTestId('panel-height')).toHaveText('0.7 m (2′04″)')
     await expect(page.getByTestId('panel-types')).toContainText('Grass')
     await expect(page.getByTestId('panel-types')).toContainText('Poison')
