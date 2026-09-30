@@ -112,6 +112,22 @@ describe('Load more', () => {
     expect(find(wrapper, 'load-more').exists()).toBe(false)
   })
 
+  it('keeps the loaded pages when a Pokemon panel is opened or closed', async () => {
+    respond = query => (query.offset === '0' ? page(1, 24, 30) : page(25, 6, 30))
+    const wrapper = await mountBrowse()
+    await find(wrapper, 'load-more').trigger('click')
+    await vi.waitFor(() => expect(cards(wrapper)).toHaveLength(30))
+    const requests = queries.length
+
+    await useRouter().push({ query: { pokemon: 'pokemon-3' } })
+    await sleep(100)
+    await useRouter().replace({ query: {} })
+    await sleep(100)
+
+    expect(cards(wrapper)).toHaveLength(30)
+    expect(queries).toHaveLength(requests) // and it did not ask the server again
+  })
+
   it('starts again from the first page when the filters change', async () => {
     respond = query => (query.type ? page(1, 30, 30) : query.offset === '0' ? page(1, 24, 30) : page(25, 6, 30))
     const wrapper = await mountBrowse()
