@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CollectionResponse, PokemonListResponse } from '#shared/types/pokemon'
-import { collectionCap, visitor, type Visitor } from './helpers'
+import { baseUrl, collectionCap, visitor, type Visitor } from './helpers'
 
 const catchIt = (v: Visitor, name: string) => v.json<{ name: string, caughtAt: string }>(`/api/collection/${name}`, { method: 'PUT' })
 const remove = (v: Visitor, name: string) => v.json(`/api/collection/${name}`, { method: 'DELETE' })
@@ -183,8 +183,17 @@ describe('per-visitor responses are not shareable by caches', () => {
     expect(await cacheControl(visitor(), path)).toBe('private, no-store')
   })
 
-  it('leaves the list that is the same for everyone alone', async () => {
+  it('marks any response that issues a cookie private, so a cache cannot hand one visitor another visitor\'s cookie', async () => {
+    for (const path of ['/api/types', '/api/pokemon', '/api/pokemon/bulbasaur', '/']) {
+      const res = await fetch(`${baseUrl()}${path}`) // no cookie, so this request is issued one
+      expect(res.headers.get('set-cookie'), path).toMatch(/pokeworld_visitor=/)
+      expect(res.headers.get('cache-control'), path).toBe('private, no-store')
+    }
+  })
+
+  it('leaves the list that is the same for everyone alone once the visitor already has a cookie', async () => {
     const v = visitor()
+    await v.request('/api/me') // gets the cookie; a response that issues one is private
     expect(await cacheControl(v, '/api/pokemon')).toBeNull()
     expect(await cacheControl(v, '/api/pokemon?caught=false')).toBeNull()
     expect(await cacheControl(v, '/api/pokemon/bulbasaur')).toBeNull()

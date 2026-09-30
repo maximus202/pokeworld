@@ -18,6 +18,11 @@ export interface CollectionStoreOptions {
  * here as an ISO string; SQLite's CURRENT_TIMESTAMP has no zone, which browsers show on the wrong day.
  */
 export function createCollectionStore(db: Database, { now = () => new Date(), maxSize }: CollectionStoreOptions) {
+  // A cap of NaN (say NUXT_MAX_COLLECTION_SIZE=abc) would make `count >= maxSize` always false and
+  // quietly remove the limit, so refuse to start with one.
+  if (!Number.isInteger(maxSize) || maxSize < 1) {
+    throw new Error(`The collection size cap (maxSize, from NUXT_MAX_COLLECTION_SIZE) must be a whole number of at least 1, got ${maxSize}`)
+  }
   db.exec(`CREATE TABLE IF NOT EXISTS collection (
     visitor_id TEXT NOT NULL,
     name       TEXT NOT NULL,

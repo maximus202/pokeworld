@@ -12,7 +12,7 @@ export function useCollectionStore(): CollectionStore {
     if (dbPath !== ':memory:') mkdirSync(dirname(dbPath), { recursive: true })
     const db = new Database(dbPath)
     db.pragma('journal_mode = WAL')
-    store = createCollectionStore(db, { maxSize: maxCollectionSize })
+    store = createCollectionStore(db, { maxSize: Number(maxCollectionSize) }) // an environment variable arrives as text
   }
   return store
 }

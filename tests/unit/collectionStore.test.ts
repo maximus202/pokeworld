@@ -96,3 +96,18 @@ describe('collection store', () => {
     expect(second.list('a')).toEqual([{ name: 'bulbasaur', caughtAt: '2026-09-28T14:03:11.402Z' }])
   })
 })
+
+describe('the collection size cap', () => {
+  it.each([Number.NaN, 0, -1, 1.5, Number.POSITIVE_INFINITY])('refuses %s, instead of silently removing the cap', (maxSize) => {
+    const db = new Database(':memory:')
+    expect(() => createCollectionStore(db, { maxSize })).toThrowError(/maxSize/)
+    db.close()
+  })
+
+  it('accepts a whole number of at least 1', () => {
+    const store = createCollectionStore(new Database(':memory:'), { maxSize: 1 })
+    open.push(store)
+    expect(store.add('a', 'bulbasaur')).toMatchObject({ name: 'bulbasaur' })
+    expect(store.add('a', 'lotad')).toBe('full')
+  })
+})
