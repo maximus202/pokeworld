@@ -49,6 +49,7 @@ test.describe('My Collection', () => {
     await expect(cards(page)).toHaveCount(2)
     await expect(cards(page).first()).toHaveAttribute('data-testid', 'pokemon-card-lotad')
     await expect(page.getByTestId('caught-date')).toHaveCount(2)
+    await expect(card(page, 'bulbasaur').getByTestId('shiny-badge')).toBeVisible() // Grass is shiny here too
   })
 
   test('shows a prompt to browse when it is empty', async ({ page }) => {

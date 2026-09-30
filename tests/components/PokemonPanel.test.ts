@@ -76,6 +76,7 @@ describe('PokemonPanel', () => {
   it('shows the required fields once the details load', async () => {
     await openPanel()
     await vi.waitFor(() => expect(text('panel-name')).toBe('Bulbasaur'))
+    expect(body().textContent).toContain('#0001') // its Pokedex number
     expect(text('panel-height')).toBe('0.7 m (2′04″)')
     expect(text('panel-types')).toContain('Grass')
     expect(text('panel-types')).toContain('Poison')
