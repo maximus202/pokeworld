@@ -150,7 +150,7 @@ Browser B (cookie 7c21...) ──► /api/collection ──► rows WHERE visito
 
 | Method | Path | Behaviour |
 | --- | --- | --- |
-| `GET` | `/api/pokemon?q=&type=&caught=&limit=&offset=` | `{ items: [{ id, name, imageUrl, shiny }], total }`, paginated. `q` is a case-insensitive substring match on name; `type` restricts to a type; `caught=true` restricts to the calling visitor's collection. All may be combined |
+| `GET` | `/api/pokemon?q=&type=&caught=&limit=&offset=` | `{ items: [{ id, name, imageUrl, shiny }], total }`, paginated. `q` is a case-insensitive substring match on the name as it is shown (`displayName`: "mr mime", not the raw "mr-mime"); `type` restricts to a type; `caught=true` restricts to the calling visitor's collection. All may be combined |
 | `GET` | `/api/pokemon/:name` | `{ id, name, height, abilities, types, image: { url, shiny } }`. `404` for an unknown name |
 | `GET` | `/api/types` | `{ types: ["bug", "dark", ...] }` for the filter control |
 
@@ -289,7 +289,7 @@ E2E is separate because Playwright downloads a browser (`npx playwright install 
 | --- | --- | --- |
 | List all Pokemon | API, E2E | Items are `{ id, name, imageUrl, shiny }`; `limit`/`offset` page without gaps or repeats; "Load more" shows the remaining count |
 | List failure | API, E2E | Upstream failure returns `502`; the UI shows an error and "Try again" recovers |
-| Search | API, E2E | Case-insensitive substring (`BULB` finds `bulbasaur`); no match returns an empty list and shows "No matches"; clearing restores the list; the query survives reload |
+| Search | API, E2E | Case-insensitive substring of the name as shown (`BULB` finds `bulbasaur`, `filler 01` finds `filler-01`, `filler-01` finds nothing); no match returns an empty list and shows "No matches"; clearing restores the list; the query survives reload |
 | Type filter | API, E2E | `type=grass` returns only grass Pokemon, including dual types; combined with `q`; unknown type is `404`; the filter survives reload |
 | Caught only | API, E2E | `caught=true` returns only the caller's Pokemon with a correct `total`; combines with `q` and `type`; another visitor's catches never appear; the empty state shows when nothing is caught; the toggle survives reload |
 | Details | API, Component, E2E | Required fields returned and rendered; height in decimetres over the API and converted in the UI; `404` for an unknown name; panel error state and "Try again" recovery |

@@ -124,8 +124,8 @@ Branch `phase-5-shell`. First UI; no screens yet beyond a smoke page.
 
 - **5.1 Theme** (`app/assets/css/main.css`, `app/app.config.ts`): red 700 primary, yellow
   accent, WCAG AA contrast.
-- **5.2 Format helpers** (`app/utils/format.ts`): `displayName`, `formatHeight`,
-  `formatCaughtDate`. Unit tests, including a UTC ISO string landing on a different local day.
+- **5.2 Format helpers** (`app/utils/format.ts`, and `shared/utils/displayName.ts` for `displayName`,
+  which the server's search also uses): `displayName`, `formatHeight`, `formatCaughtDate`. Unit tests, including a UTC ISO string landing on a different local day.
 - **5.3 `useCollection()`** with SSR fill via `useRequestFetch`, `has`, `caughtAt`, `catchPokemon`,
   `removePokemon`, `reset`, toast errors. Component tests with mocked `$fetch`.
 - **5.4 `AppHeader`**: logo, nav with count, visitor label, Reset with confirm modal (error in

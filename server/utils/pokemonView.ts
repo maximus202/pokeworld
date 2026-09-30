@@ -1,4 +1,5 @@
 import type { CollectionItem, PokemonDetails, PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
+import { displayName } from '../../shared/utils/displayName'
 import type { CaughtEntry } from './collectionStore'
 import { mapLimit } from './mapLimit'
 import { getPokemon, getPokemonIndex, getTypeMembers, getTypeNames, type PokedexEntry } from './pokeapi'
