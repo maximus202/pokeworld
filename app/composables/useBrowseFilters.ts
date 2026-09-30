@@ -10,11 +10,12 @@ export function useBrowseFilters() {
   const router = useRouter()
   const text = (value: unknown) => (typeof value === 'string' ? value : '')
 
-  const filters = computed(() => ({
-    q: text(route.query.q).trim(),
-    type: text(route.query.type),
-    caught: route.query.caught === 'true',
-  }))
+  // Keeps the same object while the values are unchanged. Otherwise opening the details panel
+  // (which only adds `?pokemon=`) would look like a filter change and reload the list from page one.
+  const filters = computed<{ q: string, type: string, caught: boolean }>((previous) => {
+    const next = { q: text(route.query.q).trim(), type: text(route.query.type), caught: route.query.caught === 'true' }
+    return previous && previous.q === next.q && previous.type === next.type && previous.caught === next.caught ? previous : next
+  })
 
   /** Sets query parameters; an empty value removes the parameter. */
   function update(patch: { q?: string, type?: string, caught?: string }) {
