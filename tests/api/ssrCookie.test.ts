@@ -32,4 +32,20 @@ describe('first-visit SSR cookie (spike)', () => {
       expect(labelIn(await res.text())).toBe(`Trainer #${id!.slice(0, 4)}`)
     },
   )
+
+  it('renders the collection count in the server-rendered header, with no flash of a wrong number', async () => {
+    const count = (html: string) => html.match(/My Collection \((\d+)\)/)?.[1]
+    const v = visitor()
+    await v.request('/api/me')
+    expect(count(await (await v.request('/')).text())).toBe('0')
+
+    await v.request('/api/collection/bulbasaur', { method: 'PUT' })
+    await v.request('/api/collection/lotad', { method: 'PUT' })
+
+    expect(count(await (await v.request('/')).text())).toBe('2')
+  })
+
+  it('renders a first-time visitor an empty collection', async () => {
+    expect(await (await fetch(baseUrl())).text()).toMatch(/My Collection \(0\)/)
+  })
 })
