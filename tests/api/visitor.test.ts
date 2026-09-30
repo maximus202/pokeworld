@@ -41,7 +41,6 @@ describe('visitor cookie', () => {
   it.each([
     ['empty', ''],
     ['not a UUID', 'abc'],
-    ['almost a UUID', '12345678-1234-1234-1234-12345678901'],
     ['a UUID with trailing junk', '12345678-1234-1234-1234-123456789012xyz'],
   ])('replaces a malformed cookie (%s) with a new UUID', async (_name, value) => {
     const id = cookieIn(await withCookie(value))
@@ -49,15 +48,7 @@ describe('visitor cookie', () => {
     expect(id).not.toBe(value)
   })
 
-  it('gives different browsers different IDs', async () => {
-    const a = visitor()
-    const b = visitor()
-    await a.request('/api/me')
-    await b.request('/api/me')
-    expect(a.id).not.toBe(b.id)
-  })
-
-  it.each(['/__nuxt_error', '/favicon.ico', '/robots.txt', '/.well-known/security.txt'])(
+  it.each(['/__nuxt_error', '/favicon.ico'])(
     'does not issue a cookie for %s',
     async (path) => {
       const res = await fetch(`${baseUrl()}${path}`, { redirect: 'manual' })

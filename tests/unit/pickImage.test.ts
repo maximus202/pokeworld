@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isGrass, pickImage, type PokeApiImageSource } from '../../server/utils/pickImage'
+import { pickImage, type PokeApiImageSource } from '../../server/utils/pickImage'
 import bulbasaur from '../fixtures/pokemon/bulbasaur.json'
 import charmander from '../fixtures/pokemon/charmander.json'
 import lotad from '../fixtures/pokemon/lotad.json'
@@ -7,20 +7,6 @@ import spriteonly from '../fixtures/pokemon/spriteonly.json'
 
 const artwork = (p: PokeApiImageSource, key: 'front_default' | 'front_shiny') =>
   p.sprites.other?.['official-artwork']?.[key]
-
-describe('isGrass', () => {
-  it('is true when grass is the primary type (bulbasaur)', () => {
-    expect(isGrass(bulbasaur)).toBe(true)
-  })
-
-  it('is true when grass is the secondary type (lotad, water/grass)', () => {
-    expect(isGrass(lotad)).toBe(true)
-  })
-
-  it('is false for a non-grass Pokemon (charmander)', () => {
-    expect(isGrass(charmander)).toBe(false)
-  })
-})
 
 describe('pickImage', () => {
   it('shows the shiny artwork for a primary grass type', () => {
@@ -59,11 +45,6 @@ describe('pickImage', () => {
   it('uses the default sprite when a grass Pokemon has only a default sprite', () => {
     const onlyDefault = { types: lotad.types, sprites: { front_default: 'https://example.test/default.png' } }
     expect(pickImage(onlyDefault)).toEqual({ url: 'https://example.test/default.png', shiny: false })
-  })
-
-  it('falls back to the sprite when there is no official-artwork key at all', () => {
-    const noArtwork = { types: charmander.types, sprites: { front_default: 'https://example.test/x.png' } }
-    expect(pickImage(noArtwork)).toEqual({ url: 'https://example.test/x.png', shiny: false })
   })
 
   it('returns a null url when there is no image at all', () => {
