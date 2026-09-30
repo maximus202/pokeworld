@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ titleTemplate: title => (title ? `${title} | Pokeworld` : 'Pokeworld') })
+
 // Load the collection on the server so the header count is right on first paint.
 await callOnce('collection', useCollection().refresh)
 </script>
