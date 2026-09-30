@@ -1,14 +1,22 @@
 <script setup lang="ts">
-// During SSR, useFetch calls the route through useRequestFetch(), which forwards the request's
-// cookie header. That is what the spike test checks.
-const { data: me } = await useFetch<{ label: string }>('/api/me', { key: 'me' })
+const { items, refresh } = useCollection()
+// Load the collection on the server so the header count is right on first paint.
+await callOnce('collection', refresh)
 </script>
 
 <template>
   <UApp>
-    <main class="p-6">
-      <h1 class="text-2xl font-bold">Pokeworld</h1>
-      <p data-testid="visitor-label">{{ me?.label }}</p>
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-default focus:px-3 focus:py-2">
+      Skip to content
+    </a>
+    <AppHeader />
+    <main id="main">
+      <UContainer class="py-6">
+        <!-- Smoke page: the real screens replace this in the next phases. -->
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <PokemonCard v-for="item in items" :key="item.name" :pokemon="item.pokemon!" :caught-at="item.caughtAt" />
+        </div>
+      </UContainer>
     </main>
   </UApp>
 </template>
