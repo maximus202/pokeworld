@@ -11,12 +11,19 @@ const MESSAGES: Record<number, string> = {
  */
 export function useCollection() {
   const items = useState<CollectionItem[]>('collection-items', () => [])
+  const latestRead = useState('collection-latest-read', () => 0) // per request on the server, unlike a module variable
   const requestFetch = useRequestFetch()
   const toast = useToast()
 
   async function refresh() {
-    items.value = (await requestFetch<CollectionResponse>('/api/collection')).items
+    const mine = ++latestRead.value
+    const read = await requestFetch<CollectionResponse>('/api/collection')
+    if (mine === latestRead.value) items.value = read.items // a newer read has started: this one is stale
   }
+
+  /** Re-reads after a change that already succeeded, so a failed read is not reported as a failed change. */
+  const refreshAfterChange = () => refresh().catch(() =>
+    toast.add({ title: 'Couldn\'t refresh your collection', description: 'Reload the page to see the latest.', color: 'error' }))
 
   /** Runs a change, then re-reads the collection. A failure is shown as a toast and returns false. */
   async function change(request: () => Promise<unknown>, title: string) {
@@ -28,7 +35,7 @@ export function useCollection() {
       toast.add({ title, description, color: 'error' })
       return false
     }
-    await refresh()
+    await refreshAfterChange()
     return true
   }
 
@@ -41,10 +48,10 @@ export function useCollection() {
     caughtAt: (name: string) => items.value.find(item => item.name === name)?.caughtAt,
     catchPokemon: (name: string) => change(() => $fetch(`/api/collection/${name}`, { method: 'PUT' }), 'Couldn\'t catch that Pokemon'),
     removePokemon: (name: string) => change(() => $fetch(`/api/collection/${name}`, { method: 'DELETE' }), 'Couldn\'t remove that Pokemon'),
-    /** Throws on failure, so the reset dialog can show the error itself. */
+    /** Throws if the reset itself fails, so the reset dialog can show the error. */
     async reset() {
       await $fetch('/api/collection', { method: 'DELETE' })
-      await refresh()
+      await refreshAfterChange()
     },
   }
 }

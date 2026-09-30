@@ -25,8 +25,11 @@ async function confirm() {
 </script>
 
 <template>
+  <!-- While the reset runs, the dialog cannot be dismissed: the reset would finish unseen. -->
   <UModal
     v-model:open="open"
+    :dismissible="!resetting"
+    :close="!resetting"
     title="Reset your collection?"
     description="This removes every Pokemon you've caught. It can't be undone."
   >
@@ -35,7 +38,7 @@ async function confirm() {
     </template>
     <template #footer>
       <div class="flex w-full justify-end gap-2">
-        <UButton color="neutral" variant="outline" label="Cancel" data-testid="reset-cancel" @click="open = false" />
+        <UButton color="neutral" variant="outline" label="Cancel" :disabled="resetting" data-testid="reset-cancel" @click="open = false" />
         <UButton label="Reset" :loading="resetting" data-testid="reset-confirm" @click="confirm" />
       </div>
     </template>

@@ -1,16 +1,19 @@
 <script setup lang="ts">
 const props = defineProps<{ url: string | null, shiny: boolean, alt: string }>()
 
-// A missing or broken shiny image falls back to the default one, and the badge goes with it.
+// A missing or broken shiny image falls back to the default one, and the badge goes with it. If
+// the default fails too there is nothing to show, so it falls back to "No image".
 const failed = ref(false)
-watch(() => props.url, () => (failed.value = false))
+const broken = ref(false)
+watch(() => props.url, () => (failed.value = broken.value = false))
 
 const defaultUrl = computed(() => props.url?.replace('/shiny/', '/') ?? null)
-const src = computed(() => (failed.value ? defaultUrl.value : props.url))
-const showBadge = computed(() => props.shiny && !failed.value && !!props.url)
+const src = computed(() => (broken.value ? null : failed.value ? defaultUrl.value : props.url))
+const showBadge = computed(() => props.shiny && !failed.value && !broken.value && !!props.url)
 
 function onError() {
-  if (defaultUrl.value !== props.url) failed.value = true
+  if (!failed.value && defaultUrl.value !== props.url) failed.value = true
+  else broken.value = true
 }
 
 // A server-rendered <img> can fail before Vue hydrates and attaches @error, so that event is

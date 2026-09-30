@@ -25,10 +25,30 @@ describe('PokemonImage', () => {
     expect(wrapper.find('[data-testid=shiny-badge]').exists()).toBe(false)
   })
 
-  it('does not swap or loop when a default image fails to load', async () => {
+  it('shows "No image", not a broken image, when a default image fails to load', async () => {
     const wrapper = await mount({ url: DEFAULT, shiny: false })
     await wrapper.find('img').trigger('error')
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.text()).toContain('No image')
+  })
+
+  it('shows "No image", without the badge, when the shiny image and then the default both fail', async () => {
+    const wrapper = await mount({ url: SHINY, shiny: true })
+    await wrapper.find('img').trigger('error')
     expect(wrapper.find('img').attributes('src')).toBe(DEFAULT)
+
+    await wrapper.find('img').trigger('error')
+
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.text()).toContain('No image')
+    expect(wrapper.find('[data-testid=shiny-badge]').exists()).toBe(false)
+  })
+
+  it('tries the new image again when the URL changes after everything failed', async () => {
+    const wrapper = await mount({ url: DEFAULT, shiny: false })
+    await wrapper.find('img').trigger('error')
+    await wrapper.setProps({ url: 'https://img.test/official-artwork/2.png' })
+    expect(wrapper.find('img').attributes('src')).toContain('/2.png')
   })
 
   it('shows "No image", and no badge, when there is no URL', async () => {

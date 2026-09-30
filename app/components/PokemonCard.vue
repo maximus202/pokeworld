@@ -29,7 +29,8 @@ defineEmits<{ remove: [] }>()
         </div>
         <UBadge v-if="caught" variant="subtle" label="Caught" data-testid="caught-badge" />
       </div>
-      <p v-if="caughtAt" class="mt-1 text-xs text-muted" :title="formatCaughtDateTime(caughtAt)" data-testid="caught-date">
+      <!-- The server and the browser can be in different time zones; the browser's date wins. -->
+      <p v-if="caughtAt" class="mt-1 text-xs text-muted" :title="formatCaughtDateTime(caughtAt)" data-allow-mismatch data-testid="caught-date">
         {{ `Caught ${formatCaughtDate(caughtAt)}` }}
       </p>
     </NuxtLink>

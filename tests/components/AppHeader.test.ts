@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { UModal } from '#components'
 import AppHeader from '~/components/AppHeader.vue'
 
 let caught = ['bulbasaur', 'lotad']
 let resetStatus = 204
 let resets = 0
+let resetGate: Promise<void> | undefined // holds the DELETE's response
 
 registerEndpoint('/api/me', () => ({ label: 'Trainer #a3f9' }))
 registerEndpoint('/api/collection', {
@@ -14,8 +16,9 @@ registerEndpoint('/api/collection', {
 })
 registerEndpoint('/api/collection', {
   method: 'DELETE',
-  handler: () => {
+  handler: async () => {
     resets++
+    await resetGate
     if (resetStatus !== 204) throw createError({ statusCode: resetStatus })
     caught = []
     return null
@@ -42,6 +45,7 @@ beforeEach(() => {
   caught = ['bulbasaur', 'lotad']
   resetStatus = 204
   resets = 0
+  resetGate = undefined
 })
 
 describe('AppHeader', () => {
@@ -105,5 +109,23 @@ describe('AppHeader', () => {
     await flushPromises()
 
     expect(dialog('reset-error')).toBeNull()
+  })
+
+  it('cannot be cancelled or dismissed while the reset is running, so its outcome is never hidden', async () => {
+    let release!: () => void
+    resetGate = new Promise(resolve => (release = resolve))
+    const wrapper = await mountHeader()
+    await wrapper.find('[data-testid=reset-button]').trigger('click')
+    await flushPromises()
+    const modal = wrapper.findComponent(UModal)
+    expect(modal.props('dismissible')).toBe(true)
+    expect(dialog('reset-cancel')!.hasAttribute('disabled')).toBe(false)
+
+    await click('reset-confirm')
+
+    expect(modal.props('dismissible')).toBe(false)
+    expect(dialog('reset-cancel')!.hasAttribute('disabled')).toBe(true)
+    release()
+    await vi.waitFor(() => expect(dialog('reset-confirm')).toBeNull())
   })
 })

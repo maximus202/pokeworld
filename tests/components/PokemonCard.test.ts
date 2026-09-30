@@ -23,6 +23,9 @@ describe('PokemonCard', () => {
     const date = (await mount({ caughtAt: '2026-09-28T14:03:11.402Z' })).find('[data-testid=caught-date]')
     expect(date.text()).toMatch(/^Caught Sep (28|29), 2026$/)
     expect(date.attributes('title')).toMatch(/2026/)
+    // The server formats the date in its own time zone and the browser in the visitor's, so the two
+    // can differ. Without this attribute Vue warns about the mismatch; the browser's text then wins.
+    expect(date.attributes('data-allow-mismatch')).toBeDefined()
   })
 
   it('has no remove button unless removable, and then emits remove without opening the panel', async () => {

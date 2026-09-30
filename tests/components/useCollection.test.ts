@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { CollectionItem } from '#shared/types/pokemon'
 
@@ -11,6 +11,9 @@ const item = (name: string, caughtAt: string): CollectionItem => ({
 // The fake server: a collection, plus a switch to make changes fail.
 let server: CollectionItem[] = []
 let failWith: number | undefined
+let readFails = false
+let reads = 0
+let gates: (Promise<void> | undefined)[] = [] // one per read, in order: hold that read's response
 const calls: string[] = []
 
 const respond = (event: { method: string, path: string }, change?: () => void) => {
@@ -21,7 +24,13 @@ const respond = (event: { method: string, path: string }, change?: () => void) =
 }
 registerEndpoint('/api/collection', {
   method: 'GET',
-  handler: () => ({ count: server.length, items: server }),
+  handler: async () => {
+    reads++
+    if (readFails) throw createError({ statusCode: 500 })
+    const snapshot = server
+    await gates.shift()
+    return { count: snapshot.length, items: snapshot }
+  },
 })
 registerEndpoint('/api/collection', {
   method: 'DELETE',
@@ -40,6 +49,9 @@ beforeEach(() => {
   useState('collection-items').value = [] // not clearNuxtState: earlier tests' headers still read it
   server = [item('lotad', '2026-09-27T10:00:00.000Z')]
   failWith = undefined
+  readFails = false
+  reads = 0
+  gates = []
   calls.length = 0
 })
 
@@ -109,5 +121,42 @@ describe('useCollection', () => {
 
     await expect(collection.reset()).rejects.toThrow()
     expect(collection.count.value).toBe(1)
+  })
+
+  it('keeps a successful catch a success, and says so, when re-reading the collection then fails', async () => {
+    const collection = useCollection()
+    const toast = useToast()
+    readFails = true
+
+    expect(await collection.catchPokemon('bulbasaur')).toBe(true)
+
+    expect(toast.toasts.value.at(-1)).toMatchObject({ title: 'Couldn\'t refresh your collection' })
+  })
+
+  it('does not report a reset that worked as a failure when re-reading the collection fails', async () => {
+    const collection = useCollection()
+    const toast = useToast()
+    await collection.refresh()
+    readFails = true
+
+    await expect(collection.reset()).resolves.toBeUndefined()
+
+    expect(server).toEqual([])
+    expect(toast.toasts.value.at(-1)).toMatchObject({ title: 'Couldn\'t refresh your collection' })
+  })
+
+  it('shows the newest collection when an older read finishes last', async () => {
+    const collection = useCollection()
+    let releaseOlder!: () => void
+    gates = [new Promise(resolve => (releaseOlder = resolve))]
+    const older = collection.refresh() // sees only lotad, and is held
+    await vi.waitFor(() => expect(reads).toBe(1))
+    server = [item('bulbasaur', '2026-09-28T14:00:00.000Z'), item('lotad', '2026-09-27T10:00:00.000Z')]
+
+    await collection.refresh() // sees both, and returns first
+    releaseOlder()
+    await older
+
+    expect(collection.items.value.map(i => i.name)).toEqual(['bulbasaur', 'lotad'])
   })
 })
