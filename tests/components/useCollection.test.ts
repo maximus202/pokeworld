@@ -5,7 +5,7 @@ import type { CollectionItem } from '#shared/types/pokemon'
 const item = (name: string, caughtAt: string): CollectionItem => ({
   name,
   caughtAt,
-  pokemon: { id: 1, name, shiny: false, imageUrl: null },
+  pokemon: { id: 1, name, shiny: false, imageUrl: `https://img.test/${name}.png` },
 })
 
 // The fake server: a collection, plus a switch to make changes fail.
