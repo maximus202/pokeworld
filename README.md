@@ -13,14 +13,16 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. There is nothing else to set up. The SQLite database is created at `data/pokeworld.db` the first time the app runs, and PokeAPI needs no key. The first page load fetches the Pokemon list from PokeAPI, so you need a network connection.
+Open http://localhost:3000. There is nothing else to set up. PokeAPI needs no key, and the SQLite database is created at `data/pokeworld.db` the first time a page is loaded (the header reads your collection), not when the server starts.
+
+You need a network connection: the server fetches the Pokemon list from PokeAPI, and your browser loads the Pokemon images straight from `raw.githubusercontent.com` (PokeAPI's sprites repository). Offline, or on a network that blocks that host, cards show "No image".
 
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Development server with hot reload |
 | `npm run build` then `npm run preview` | Production build, served locally |
 | `npm run typecheck` | Type check (`nuxt typecheck`) |
-| `npm test` | Unit, API and component tests |
+| `npm test` | Unit, API and component tests. The API tests run against a production build, so this starts with a `nuxt build`; set `SKIP_BUILD=1` to reuse an existing `.output/` from `npm run build` |
 | `npm run test:e2e` | End-to-end tests in a real browser (see below) |
 
 ## Configuration
@@ -50,7 +52,7 @@ All optional. They are read through Nuxt's `runtimeConfig`, so these environment
   | `DELETE /api/collection` | Reset |
   | `GET /api/me` | Your label |
 
-- **PokeAPI is only called from the server**, and answers are cached in memory for the life of the process. Search, paging and the type filter are done on the server over the cached list, because PokeAPI has no search endpoint.
+- **PokeAPI is only called from the server** (the images are the exception: the browser loads those from GitHub, see above), and answers are cached in memory for the life of the process. Search, paging and the type filter are done on the server over the cached list, because PokeAPI has no search endpoint.
 - **Search, filters and the details panel live in the URL** (`?q=&type=&caught=true&pokemon=name`). A reload or a shared link shows the same view, and closing the panel returns you to the screen you came from.
 - **Grass types show their shiny image**, with a "Shiny" badge, everywhere the Pokemon appears: the list, search results, your collection, and the details panel.
 
@@ -58,7 +60,7 @@ More detail is in `product/`: `1-user-stories.md`, `2-design.md` and `3-plan.md`
 
 ## Tests
 
-Nothing calls the live PokeAPI. Tests use a small fixture server with recorded, trimmed PokeAPI responses.
+Nothing calls the live PokeAPI. Tests use a small fixture server with recorded, trimmed PokeAPI responses, and the end-to-end tests replace the image host with a 1x1 picture.
 
 | Layer | What it covers | Run with |
 | --- | --- | --- |
