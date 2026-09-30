@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from '@playwright/test'
+import { test as base, expect, type Browser, type Page } from '@playwright/test'
 import { fixtureControl } from '../fixtures/server'
 import { FIXTURE_URL } from './env'
 
@@ -6,12 +6,24 @@ import { FIXTURE_URL } from './env'
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=', 'base64')
 export const IMAGE_HOST = 'https://raw.githubusercontent.com/**'
 
+const stubImages = (page: Page) => page.route(IMAGE_HOST, route => route.fulfill({ contentType: 'image/png', body: PNG }))
+
 export const test = base.extend({
   page: async ({ page }, use) => {
-    await page.route(IMAGE_HOST, route => route.fulfill({ contentType: 'image/png', body: PNG }))
+    await stubImages(page)
     await use(page)
   },
 })
+
+/** A separate browser, with its own cookies, and so its own visitor. */
+export async function newVisitor(browser: Browser) {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  await stubImages(page)
+  await page.goto('/')
+  const cookies = await context.cookies()
+  return { context, page, id: cookies.find(c => c.name === 'pokeworld_visitor')!.value }
+}
 
 export { expect }
 
