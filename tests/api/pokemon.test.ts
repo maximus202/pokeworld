@@ -103,6 +103,16 @@ describe('GET /api/pokemon', () => {
     expect(names(await list('?q=saur'))).toEqual(['bulbasaur', 'ivysaur', 'venusaur'])
   })
 
+  it('matches the name as it is shown, with a space where the name has a hyphen', async () => {
+    // "filler-01" is shown as "Filler 01" (like "mr-mime" is shown as "Mr Mime").
+    expect(names(await list('?q=filler 01'))).toEqual(['filler-01'])
+    expect((await list('?q=FILLER 0')).body.total).toBe(9) // filler 01 to 09
+  })
+
+  it('does not match the raw hyphenated name, which is not what the visitor sees', async () => {
+    expect((await list('?q=filler-01')).body.total).toBe(0)
+  })
+
   it('returns an empty list, with a total of 0, when nothing matches', async () => {
     expect((await list('?q=zzz')).body).toEqual({ items: [], total: 0 })
   })

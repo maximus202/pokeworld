@@ -52,7 +52,9 @@ export async function queryPokemon({ q, type, only, limit, offset }: PokemonQuer
     getTypeMembers('grass'),
     type ? getTypeMembers(type) : undefined,
   ])
+  // The search text is matched against the name as it is shown ("mr mime", not "mr-mime"), so what
+  // the visitor types is what they see on the card.
   const needle = q.trim().toLowerCase()
-  const matches = index.filter(entry => entry.name.includes(needle) && (!inType || inType.has(entry.name)) && (!only || only.has(entry.name)))
+  const matches = index.filter(entry => displayName(entry.name).toLowerCase().includes(needle) && (!inType || inType.has(entry.name)) && (!only || only.has(entry.name)))
   return { total: matches.length, items: matches.slice(offset, offset + limit).map(entry => toListItem(entry, grass)) }
 }
