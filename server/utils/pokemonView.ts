@@ -1,9 +1,8 @@
-import type { CollectionItem, PokemonDetails, PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
+import type { CollectionItem, PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
 // Relative, not `#shared/...`: that alias is not available when the plain unit tests load this file. (Type imports are erased, so they can use it.)
 import { displayName } from '../../shared/utils/displayName'
 import type { CaughtEntry } from './collectionStore'
-import { mapLimit } from './mapLimit'
-import { getPokemon, getPokemonIndex, getTypeMembers, getTypeNames, type PokedexEntry } from './pokeapi'
+import { getPokemonIndex, getTypeMembers, getTypeNames, type PokedexEntry } from './pokeapi'
 
 const ARTWORK_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork'
 
@@ -17,22 +16,26 @@ export function toListItem({ id, name }: PokedexEntry, grass: Set<string>): Poke
   return { id, name, shiny, imageUrl: `${ARTWORK_URL}/${shiny ? 'shiny/' : ''}${id}.png` }
 }
 
-/** At most this many PokeAPI lookups in flight while resolving a collection on a cold cache. */
-const LOOKUP_CONCURRENCY = 8
+/** The cached Pokemon list and the set of Grass Pokemon: everything a list item is built from. */
+const getCatalogue = () => Promise.all([getPokemonIndex(), getTypeMembers('grass')])
 
 /**
- * A caught Pokemon as a list item, from its details. If the details cannot be loaded the entry
- * keeps its place with `pokemon: null`, so the count is right and the UI can offer a retry.
+ * Caught Pokemon as list items, built from the cached list like the browse screen's, so reading a
+ * collection costs two cached requests however many Pokemon are in it. A name that is not in the
+ * list, or every name if the list cannot be loaded, keeps its place with `pokemon: null`, so the
+ * count is right and the UI can offer a retry.
  */
-export function toCollectionItems(entries: CaughtEntry[], lookup: (name: string) => Promise<PokemonDetails> = getPokemon): Promise<CollectionItem[]> {
-  return mapLimit(entries, LOOKUP_CONCURRENCY, async ({ name, caughtAt }) => ({
-    name,
-    caughtAt,
-    pokemon: await lookup(name).then(({ id, image }): PokemonListItem => ({ id, name, shiny: image.shiny, imageUrl: image.url }), (error: Error & { statusMessage?: string }) => {
-      console.warn(`[collection] could not load ${name}: ${error.statusMessage ?? error.message}`)
-      return null
-    }),
-  }))
+export async function toCollectionItems(entries: CaughtEntry[], catalogue = getCatalogue): Promise<CollectionItem[]> {
+  const [index, grass] = await catalogue().catch((error): [PokedexEntry[], Set<string>] => {
+    const { statusMessage, message } = error as Error & { statusMessage?: string }
+    console.warn(`[collection] could not load the Pokemon list: ${statusMessage ?? message}`)
+    return [[], new Set()]
+  })
+  const byName = new Map(index.map(entry => [entry.name, entry]))
+  return entries.map(({ name, caughtAt }) => {
+    const entry = byName.get(name)
+    return { name, caughtAt, pokemon: entry ? toListItem(entry, grass) : null }
+  })
 }
 
 export interface PokemonQuery {

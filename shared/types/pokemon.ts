@@ -1,8 +1,7 @@
 export interface PokemonListItem {
   id: number
   name: string
-  /** null when PokeAPI has no image at all (only possible for a collection entry). */
-  imageUrl: string | null
+  imageUrl: string
   shiny: boolean
 }
 

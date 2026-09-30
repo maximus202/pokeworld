@@ -68,10 +68,15 @@ const toDetails = (pokemon: PokeApiPokemon): PokemonDetails => ({
   image: pickImage(pokemon),
 })
 
-/** A Pokemon's details. A name that is not a Pokedex entry is a 404 without asking PokeAPI. */
-export async function getPokemon(name: string): Promise<PokemonDetails> {
+/** A name that is not a Pokedex entry is a 404, decided from the cached list without asking PokeAPI about it. */
+export async function assertPokedexName(name: string): Promise<void> {
   if (!(await getPokemonIndex()).some(entry => entry.name === name)) {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
+}
+
+/** A Pokemon's details. */
+export async function getPokemon(name: string): Promise<PokemonDetails> {
+  await assertPokedexName(name)
   return load(`/pokemon/${name}`, toDetails)
 }

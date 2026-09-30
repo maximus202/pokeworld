@@ -107,9 +107,9 @@ Branch `phase-4-collection`. Completes the API; after this the backend is usable
 - **4.2 Write routes** (`PUT`/`DELETE /api/collection/:name`, `DELETE /api/collection`,
   `server/utils/name.ts`). Tests: `200 { name, caughtAt }`, `404` unknown, `400` malformed, `409`
   full, idempotent DELETE, timestamps end in `Z`.
-- **4.3 `GET /api/collection`** joined with list items, `pokemon: null` per-entry failure,
-  `count === items.length`, `mapLimit` of 8. Tests: only caller's items, failure entry still
-  counts.
+- **4.3 `GET /api/collection`** joined with list items built from the cached list,
+  `pokemon: null` for a name that cannot be resolved, `count === items.length`. Tests: only
+  caller's items, failure entry still counts.
 - **4.4 `caught=true`** on the list route. Tests: only caller's, correct `total`, combines with
   `q` and `type`, other visitor's catches never appear.
 - **4.5 Tenancy suite.** Visitor A vs B: catch, remove, reset isolation.

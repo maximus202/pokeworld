@@ -124,18 +124,18 @@ interface CollectionStore {
 | `DELETE` | `/api/collection/:name` | Remove. `204`. Idempotent |
 | `DELETE` | `/api/collection` | Reset. `204`. Deletes every row for this visitor |
 
-- **Catch validation.** `PUT` resolves the name through `getPokemon(name)` (index check, then the
-  cached details) before inserting, so unknown names are rejected and the header count can never include a Pokemon that
-  cannot be displayed. Names are also lower-cased and checked against `^[a-z0-9-]{1,100}$`.
-  Because a new catch is what the client wants to render next, this warms the cache for the
-  details panel and the collection at no extra cost.
+- **Catch validation.** `PUT` checks the name against the cached Pokemon list (`assertPokedexName`)
+  before inserting, so unknown names are rejected and the header count can never include a Pokemon
+  that cannot be displayed. It does not fetch the Pokemon itself: the collection is built from the
+  same list, so the list is all it needs. Names are also lower-cased and checked against
+  `^[a-z0-9-]{1,100}$`.
 - **Collection resolves server-side.** `GET /api/collection` joins each caught name with its list
-  item (`{ id, name, imageUrl, shiny }`, from the cached details) in one round trip, instead of N
-  client requests, with at most 8 lookups in flight (`mapLimit`), so a large collection on a cold
-  cache after a restart does not become that many simultaneous PokeAPI requests. If PokeAPI fails
-  for one entry, that entry is returned with `pokemon: null`
-  rather than dropped, so `count` always equals `items.length` and the UI can show a per-card error
-  with a retry.
+  item (`{ id, name, imageUrl, shiny }`) in one round trip. The items are built from the cached
+  Pokemon list and Grass set, the same way the browse list is, so reading a collection costs two
+  cached requests however many Pokemon it holds, and the header count never waits on a lookup per
+  Pokemon. A name that is not in the list, or every name if the list cannot be loaded, is returned
+  with `pokemon: null` rather than dropped, so `count` always equals `items.length` and the UI can
+  show a per-card error with a retry.
 - **Why `200` with a body for catch.** The response carries the server-assigned `caughtAt`, so
   the API result is complete on its own (the web client then refreshes the collection).
 
@@ -302,7 +302,7 @@ E2E is separate because Playwright downloads a browser (`npx playwright install 
 | Collection cap | Store, API | The 1,001st distinct catch returns `409`; re-catching an existing one when full succeeds |
 | Caught date | Store, API, Component, E2E | Timestamps are ISO 8601 UTC with `Z`; shown on cards and in the panel; ordered most recent first; formatted in the local zone |
 | View collection | API, E2E | Only the caller's Pokemon; count equals items; header count is correct on first render (no flash); empty and loading states |
-| Collection entry failure | API, Component | A Pokemon whose details fail returns `pokemon: null`, still counts, and renders an error card with retry |
+| Collection entry failure | Unit, Component | A name missing from the list, or the list failing to load, returns `pokemon: null`, still counts, and renders an error card with retry |
 | Remove | API, Component, E2E | `DELETE` removes the row; the button flips to Catch; the grid remove control works without opening the panel |
 | Reset | API, E2E | Empties only this visitor's rows; cancel does nothing; a failure shows an error and keeps the collection |
 | PokeAPI caching | API | Repeated details, list, search and type calls hit the fixture server once; failures are retried |
