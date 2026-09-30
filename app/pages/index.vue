@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PokemonListResponse } from '#shared/types/pokemon'
 
+useHead({ title: 'Pokemon' })
 const PAGE_SIZE = 24
 const collection = useCollection()
 const toast = useToast()

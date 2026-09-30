@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useHead({ title: 'My Collection' })
 const collection = useCollection()
 
 // Re-read the collection when the screen opens. Without `lazy` the screen would wait for it; with
@@ -9,12 +10,14 @@ const { status, refresh } = await useAsyncData('collection-screen', async () => 
 }, { lazy: true })
 const loading = computed(() => status.value === 'pending')
 
-// The card that was just removed had the keyboard focus. Without this it falls back to the top of
-// the page and a keyboard visitor has to tab all the way back down.
+// A keyboard visitor's focus was on the card that is about to disappear. Without this it falls
+// back to the top of the page and they have to tab all the way down again. Mouse and touch
+// visitors are left alone (moving focus would scroll the page to the top), and so is a removal
+// that failed: the button is still there and still has focus.
 const heading = ref<HTMLElement>()
 async function remove(name: string) {
-  await collection.removePokemon(name)
-  heading.value?.focus()
+  const byKeyboard = document.activeElement?.matches(':focus-visible')
+  if (await collection.removePokemon(name) && byKeyboard) heading.value?.focus()
 }
 </script>
 
