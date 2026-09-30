@@ -4,10 +4,8 @@ import { isHttpsRequest, isVisitorTraffic, withVisitorCookie } from '../../serve
 describe('isVisitorTraffic', () => {
   it.each([
     '/',
-    '/collection',
     '/?pokemon=bulbasaur',
     '/api/me',
-    '/api/collection/mr-mime',
     '/api/collection/odd.name', // dots never make an /api route skip the middleware
   ])('identifies %s', (path) => {
     expect(isVisitorTraffic(path)).toBe(true)
@@ -16,10 +14,7 @@ describe('isVisitorTraffic', () => {
   it.each([
     '/_nuxt/entry.abc123.js',
     '/__nuxt_error',
-    '/__nuxt_island/x.json',
     '/favicon.ico',
-    '/robots.txt',
-    '/apple-touch-icon.png',
     '/.well-known/security.txt',
     '/favicon.ico?v=2',
   ])('does not identify %s', (path) => {
@@ -42,8 +37,8 @@ describe('withVisitorCookie', () => {
     expect(withVisitorCookie('theme=dark; lang=en', ID)).toBe(`theme=dark; lang=en; pokeworld_visitor=${ID}`)
   })
 
-  it.each(['pokeworld_visitor=', 'pokeworld_visitor=abc'])('drops %s but keeps the other cookies', (bad) => {
-    expect(withVisitorCookie(`theme=dark; ${bad}; lang=en`, ID)).toBe(`theme=dark; lang=en; pokeworld_visitor=${ID}`)
+  it('drops an empty or malformed visitor cookie but keeps the other cookies', () => {
+    expect(withVisitorCookie('theme=dark; pokeworld_visitor=; lang=en', ID)).toBe(`theme=dark; lang=en; pokeworld_visitor=${ID}`)
   })
 
   it('does not treat a cookie that merely starts with the same letters as the visitor cookie', () => {

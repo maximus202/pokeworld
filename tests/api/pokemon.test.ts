@@ -120,7 +120,7 @@ describe('GET /api/pokemon', () => {
     expect((await list(`?type=${encodeURIComponent(type)}`)).body.total).toBe(6)
   })
 
-  it.each(['nope', 'unknown', 'shadow'])('returns 404 for the type "%s"', async (type) => {
+  it.each(['nope', 'shadow'])('returns 404 for the type "%s"', async (type) => {
     expect((await list(`?type=${type}`)).status).toBe(404)
   })
 

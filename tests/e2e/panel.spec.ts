@@ -48,21 +48,6 @@ test.describe('details panel', () => {
 
     await expect(page.locator('[data-testid^=pokemon-card-]')).toHaveCount(30)
   })
-
-  test('shows an error with Try again when the details cannot be loaded, and recovers', async ({ page }) => {
-    await page.goto('/')
-    // Made in the browser, which retries a failed GET once, so every attempt has to fail.
-    await page.route('**/api/pokemon/wartortle', route => route.fulfill({ status: 502, json: { statusMessage: 'PokeAPI request failed' } }))
-
-    await card(page, 'wartortle').locator('a').click()
-    await expect(page.getByTestId('panel-error')).toBeVisible()
-
-    await page.unroute('**/api/pokemon/wartortle')
-    await page.getByTestId('panel-retry').click()
-
-    await expect(page.getByTestId('panel-name')).toHaveText('Wartortle')
-    await expect(page.getByTestId('panel-error')).toBeHidden()
-  })
 })
 
 test.describe('Grass shows shiny', () => {

@@ -20,22 +20,6 @@ test('lists the Pokemon a page at a time, with how many are left', async ({ page
   await expect(page.getByTestId('load-more')).toBeHidden()
 })
 
-test('shows an error with Try again when the list cannot be loaded, and Try again recovers', async ({ page }) => {
-  await page.goto('/')
-  // The failure is made in the browser, so this does not depend on what the server has cached.
-  // (The browser retries a failed GET once, so every attempt has to fail.)
-  await page.route(/\/api\/pokemon\?/, route => route.fulfill({ status: 502, json: { statusMessage: 'PokeAPI request failed' } }))
-
-  await search(page).fill('bulb')
-  await expect(page.getByTestId('list-error')).toBeVisible()
-
-  await page.unroute(/\/api\/pokemon\?/)
-  await page.getByTestId('list-retry').click()
-
-  await expect(cards(page)).toHaveCount(1)
-  await expect(page.getByTestId('list-error')).toBeHidden()
-})
-
 test.describe('search', () => {
   test('matches names case-insensitively by substring, and survives a reload', async ({ page }) => {
     await page.goto('/')

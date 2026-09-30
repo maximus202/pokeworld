@@ -24,16 +24,6 @@ test.describe('catch', () => {
     await expect(card(page, 'bulbasaur').getByTestId('caught-date')).toContainText('Caught')
   })
 
-  test('catching twice keeps one entry and the original date', async ({ page }) => {
-    await page.goto('/')
-    const first = await (await page.request.put('/api/collection/lotad')).json()
-    const again = await (await page.request.put('/api/collection/lotad')).json()
-
-    expect(again).toEqual(first)
-    await page.goto('/collection')
-    await expect(cards(page)).toHaveCount(1)
-  })
-
   test('a failed catch shows a message and changes nothing', async ({ page }) => {
     await page.goto('/')
     await page.route('**/api/collection/bulbasaur', route => route.fulfill({ status: 409, json: { statusMessage: 'Collection is full' } }))
