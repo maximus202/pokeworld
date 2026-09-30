@@ -3,14 +3,20 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import PokemonCard from '~/components/PokemonCard.vue'
 
 const pokemon = { id: 1, name: 'bulbasaur', shiny: true, imageUrl: 'https://img.test/shiny/1.png' }
-const mount = (props: Record<string, unknown> = {}) => mountSuspended(PokemonCard, { props: { pokemon, ...props } })
+const mount = (props: Record<string, unknown> = {}, route = '/') => mountSuspended(PokemonCard, { props: { pokemon, ...props }, route })
 
 describe('PokemonCard', () => {
   it('shows the number, the name and a link that opens the details panel', async () => {
     const wrapper = await mount()
     expect(wrapper.text()).toContain('#0001')
     expect(wrapper.text()).toContain('Bulbasaur')
-    expect(wrapper.find('a').attributes('href')).toBe('?pokemon=bulbasaur') // relative, so it keeps the screen you are on
+    expect(wrapper.find('a').attributes('href')).toBe('/?pokemon=bulbasaur')
+  })
+
+  it('keeps the screen and filters you are on, so closing the panel returns to them', async () => {
+    const wrapper = await mount({}, '/?q=bulb&type=grass&caught=true')
+    const href = wrapper.find('a').attributes('href')!
+    expect(new URLSearchParams(href.split('?')[1]).toString()).toBe('q=bulb&type=grass&caught=true&pokemon=bulbasaur')
   })
 
   it('shows the Caught badge only when asked to', async () => {

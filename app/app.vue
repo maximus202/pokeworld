@@ -1,7 +1,6 @@
 <script setup lang="ts">
-const { items, refresh } = useCollection()
 // Load the collection on the server so the header count is right on first paint.
-await callOnce('collection', refresh)
+await callOnce('collection', useCollection().refresh)
 </script>
 
 <template>
@@ -12,11 +11,9 @@ await callOnce('collection', refresh)
     <AppHeader />
     <main id="main">
       <UContainer class="py-6">
-        <!-- Smoke page: the real screens replace this in the next phases. -->
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          <PokemonCard v-for="item in items" :key="item.name" :pokemon="item.pokemon!" :caught-at="item.caughtAt" />
-        </div>
+        <NuxtPage />
       </UContainer>
     </main>
+    <PokemonPanel />
   </UApp>
 </template>
