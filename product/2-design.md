@@ -124,11 +124,11 @@ interface CollectionStore {
 | `DELETE` | `/api/collection/:name` | Remove. `204`. Idempotent |
 | `DELETE` | `/api/collection` | Reset. `204`. Deletes every row for this visitor |
 
-- **Catch validation.** `PUT` resolves the name through `getPokemon(name)` (index check, then the
-  cached details) before inserting, so unknown names are rejected and the header count can never include a Pokemon that
-  cannot be displayed. Names are also lower-cased and checked against `^[a-z0-9-]{1,100}$`.
-  Because a new catch is what the client wants to render next, this warms the cache for the
-  details panel at no extra cost.
+- **Catch validation.** `PUT` checks the name against the cached Pokemon list (`assertPokedexName`)
+  before inserting, so unknown names are rejected and the header count can never include a Pokemon
+  that cannot be displayed. It does not fetch the Pokemon itself: the collection is built from the
+  same list, so the list is all it needs. Names are also lower-cased and checked against
+  `^[a-z0-9-]{1,100}$`.
 - **Collection resolves server-side.** `GET /api/collection` joins each caught name with its list
   item (`{ id, name, imageUrl, shiny }`) in one round trip. The items are built from the cached
   Pokemon list and Grass set, the same way the browse list is, so reading a collection costs two

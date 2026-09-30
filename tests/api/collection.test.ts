@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CollectionResponse, PokemonListResponse } from '#shared/types/pokemon'
-import { baseUrl, collectionCap, visitor, type Visitor } from './helpers'
+import { baseUrl, collectionCap, fixture, visitor, type Visitor } from './helpers'
 
 const catchIt = (v: Visitor, name: string) => v.json<{ name: string, caughtAt: string }>(`/api/collection/${name}`, { method: 'PUT' })
 const remove = (v: Visitor, name: string) => v.json(`/api/collection/${name}`, { method: 'DELETE' })
@@ -30,6 +30,20 @@ describe('PUT /api/collection/:name (catch)', () => {
   it('accepts an upper-case name', async () => {
     const v = visitor()
     expect((await catchIt(v, 'CHARMANDER')).body.name).toBe('charmander')
+  })
+
+  it('checks the name against the cached list: neither catching nor reading the collection fetches the Pokemon itself', async () => {
+    // filler-05 is in the fixture list but has no record of its own, so any request for it would fail.
+    const v = visitor()
+    await v.request('/api/pokemon') // the list is cached
+    await fixture().reset()
+
+    expect((await catchIt(v, 'filler-05')).status).toBe(200)
+    const { body } = await collection(v)
+
+    expect(body.items[0]).toMatchObject({ name: 'filler-05', pokemon: { name: 'filler-05' } })
+    const fetched = Object.keys(await fixture().counts()).filter(path => path.startsWith('/pokemon/'))
+    expect(fetched).toEqual([]) // no /pokemon/<name> request at all
   })
 
   it('rejects an unknown Pokemon with 404 and stores nothing', async () => {
