@@ -9,12 +9,13 @@ defineProps<{
   removable?: boolean
 }>()
 defineEmits<{ remove: [] }>()
+const panel = usePokemonPanel()
 </script>
 
 <template>
   <div class="relative" :data-testid="`pokemon-card-${pokemon.name}`">
     <NuxtLink
-      :to="{ query: { pokemon: pokemon.name } }"
+      :to="panel.to(pokemon.name)"
       class="block rounded-xl border border-default bg-default p-3 transition hover:border-primary hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary"
     >
       <PokemonImage :url="pokemon.imageUrl" :shiny="pokemon.shiny" :alt="displayName(pokemon.name)" />
