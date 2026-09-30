@@ -1,2 +1,13 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/*
+ * Nuxt UI's default red (red-500) gives white text only 3.8:1, below the 4.5:1 that WCAG AA
+ * needs for small text. Its 700 shade gives 6.4:1 for white on red and 5.4:1 for red text on a
+ * light tint. `:not(.dark)` raises the specificity above Nuxt UI's runtime :root rule and leaves
+ * dark mode on its own lighter shade.
+ */
+:root:not(.dark) {
+  --ui-primary: var(--ui-color-primary-700);
+  --ui-error: var(--ui-color-error-700);
+}
