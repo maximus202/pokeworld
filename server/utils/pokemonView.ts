@@ -1,4 +1,5 @@
 import type { CollectionItem, PokemonDetails, PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
+// Relative, not `#shared/...`: that alias is not available when the plain unit tests load this file. (Type imports are erased, so they can use it.)
 import { displayName } from '../../shared/utils/displayName'
 import type { CaughtEntry } from './collectionStore'
 import { mapLimit } from './mapLimit'
