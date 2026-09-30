@@ -13,9 +13,11 @@ const caught = (name: string, caughtAt: string, loaded = true): CollectionItem =
 // The fake server: the collection it holds, an optional gate to hold its response, and the removals it saw.
 let server: CollectionItem[] = []
 let gate: Promise<void> | undefined
+let readFails = false
 let removed: string[] = []
 registerEndpoint('/api/collection', async () => {
   await gate
+  if (readFails) throw createError({ statusCode: 500 })
   return { count: server.length, items: server }
 })
 for (const name of ['bulbasaur', 'lotad', 'charmander']) {
@@ -34,6 +36,7 @@ afterEach(() => mounted.splice(0).forEach(wrapper => wrapper.unmount()))
 beforeEach(() => {
   server = []
   gate = undefined
+  readFails = false
   removed = []
   useState('collection-items').value = []
 })
@@ -111,6 +114,34 @@ describe('collection screen', () => {
   })
 })
 
+describe('when the collection cannot be loaded', () => {
+  it('says so, with Try again, instead of claiming nothing has been caught', async () => {
+    readFails = true
+    const screen = await mountScreen()
+
+    expect(screen.find('[data-testid=collection-error]').text()).toContain('Couldn\'t load your collection')
+    expect(screen.find('[data-testid=collection-empty]').exists()).toBe(false)
+
+    readFails = false
+    server = [caught('bulbasaur', '2026-09-27T16:00:00.000Z')]
+    await screen.find('[data-testid=collection-retry]').trigger('click')
+
+    await vi.waitFor(() => expect(cardNames(screen)).toEqual(['bulbasaur']))
+    expect(screen.find('[data-testid=collection-error]').exists()).toBe(false)
+  })
+
+  it('keeps showing the Pokemon it already has, next to the error', async () => {
+    server = [caught('bulbasaur', '2026-09-27T16:00:00.000Z')]
+    useState('collection-items').value = server
+    readFails = true
+
+    const screen = await mountScreen()
+
+    expect(screen.find('[data-testid=collection-error]').exists()).toBe(true)
+    expect(cardNames(screen)).toEqual(['bulbasaur'])
+  })
+})
+
 describe('a Pokemon that could not be loaded', () => {
 
   it('keeps its place, still counts, and can be removed', async () => {
@@ -121,6 +152,8 @@ describe('a Pokemon that could not be loaded', () => {
     expect(card.text()).toContain('Lotad')
     expect(card.text()).toContain('Couldn\'t load this Pokemon')
     expect(card.text()).toMatch(/Caught Sep (27|28), 2026/)
+    // Formatted in the visitor's time zone, which the server cannot know, so the two can differ.
+    expect(card.find('[data-allow-mismatch]').text()).toMatch(/^Caught /)
     expect(useCollection().count.value).toBe(2)
     expect(cardNames(screen)).toEqual(['bulbasaur'])
 

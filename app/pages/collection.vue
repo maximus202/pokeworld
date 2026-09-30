@@ -16,11 +16,18 @@ const loading = computed(() => status.value === 'pending')
       My Collection
     </h1>
 
+    <!-- A failed read must not look like an empty collection. Pokemon already loaded stay visible. -->
+    <UAlert v-if="status === 'error'" color="error" variant="subtle" title="Couldn't load your collection" description="Your Pokemon are safe; something went wrong reading them. Try again." data-testid="collection-error">
+      <template #actions>
+        <UButton color="error" variant="outline" label="Try again" :loading="loading" data-testid="collection-retry" @click="refresh()" />
+      </template>
+    </UAlert>
+
     <div v-if="loading && !collection.items.value.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6" data-testid="collection-loading">
       <USkeleton v-for="n in 6" :key="n" class="h-56" />
     </div>
 
-    <div v-else-if="!collection.items.value.length" class="py-16 text-center" data-testid="collection-empty">
+    <div v-else-if="!collection.items.value.length && status !== 'error'" class="py-16 text-center" data-testid="collection-empty">
       <p class="text-lg font-semibold">
         You haven't caught any Pokemon yet
       </p>
@@ -30,7 +37,7 @@ const loading = computed(() => status.value === 'pending')
       <UButton to="/" label="Browse Pokemon" />
     </div>
 
-    <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6" data-testid="collection-list">
+    <div v-else-if="collection.items.value.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6" data-testid="collection-list">
       <template v-for="item in collection.items.value" :key="item.name">
         <PokemonCard v-if="item.pokemon" :pokemon="item.pokemon" :caught-at="item.caughtAt" removable @remove="collection.removePokemon(item.name)" />
         <!-- It still counts and can be removed; it just could not be looked up. -->
@@ -41,7 +48,7 @@ const loading = computed(() => status.value === 'pending')
           <p class="text-sm text-muted">
             Couldn't load this Pokemon.
           </p>
-          <p class="text-xs text-muted" :title="formatCaughtDateTime(item.caughtAt)">
+          <p class="text-xs text-muted" :title="formatCaughtDateTime(item.caughtAt)" data-allow-mismatch>
             {{ `Caught ${formatCaughtDate(item.caughtAt)}` }}
           </p>
           <div class="flex flex-wrap gap-2">
