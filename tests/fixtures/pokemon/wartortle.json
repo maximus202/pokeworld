@@ -1,0 +1,34 @@
+{
+  "id": 8,
+  "name": "wartortle",
+  "height": 5,
+  "abilities": [
+    {
+      "ability": {
+        "name": "torrent"
+      }
+    },
+    {
+      "ability": {
+        "name": "rain-dish"
+      }
+    }
+  ],
+  "types": [
+    {
+      "type": {
+        "name": "water"
+      }
+    }
+  ],
+  "sprites": {
+    "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png",
+    "front_shiny": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/8.png",
+    "other": {
+      "official-artwork": {
+        "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/8.png",
+        "front_shiny": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/8.png"
+      }
+    }
+  }
+}

@@ -1,5 +1,7 @@
-import type { PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
-import { getPokemonIndex, getTypeMembers, getTypeNames, type PokedexEntry } from './pokeapi'
+import type { CollectionItem, PokemonDetails, PokemonListItem, PokemonListResponse } from '#shared/types/pokemon'
+import type { CaughtEntry } from './collectionStore'
+import { mapLimit } from './mapLimit'
+import { getPokemon, getPokemonIndex, getTypeMembers, getTypeNames, type PokedexEntry } from './pokeapi'
 
 const ARTWORK_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork'
 
@@ -13,10 +15,35 @@ export function toListItem({ id, name }: PokedexEntry, grass: Set<string>): Poke
   return { id, name, shiny, imageUrl: `${ARTWORK_URL}/${shiny ? 'shiny/' : ''}${id}.png` }
 }
 
-export interface PokemonQuery { q: string, type?: string, limit: number, offset: number }
+/** At most this many PokeAPI lookups in flight while resolving a collection on a cold cache. */
+const LOOKUP_CONCURRENCY = 8
+
+/**
+ * A caught Pokemon as a list item, from its details. If the details cannot be loaded the entry
+ * keeps its place with `pokemon: null`, so the count is right and the UI can offer a retry.
+ */
+export function toCollectionItems(entries: CaughtEntry[], lookup: (name: string) => Promise<PokemonDetails> = getPokemon): Promise<CollectionItem[]> {
+  return mapLimit(entries, LOOKUP_CONCURRENCY, async ({ name, caughtAt }) => ({
+    name,
+    caughtAt,
+    pokemon: await lookup(name).then(({ id, image }): PokemonListItem => ({ id, name, shiny: image.shiny, imageUrl: image.url }), (error: Error & { statusMessage?: string }) => {
+      console.warn(`[collection] could not load ${name}: ${error.statusMessage ?? error.message}`)
+      return null
+    }),
+  }))
+}
+
+export interface PokemonQuery {
+  q: string
+  type?: string
+  /** Only these names, for the "Caught only" filter. */
+  only?: Set<string>
+  limit: number
+  offset: number
+}
 
 /** One page of Pokemon matching the name search and type filter, in Pokedex order. */
-export async function queryPokemon({ q, type, limit, offset }: PokemonQuery): Promise<PokemonListResponse> {
+export async function queryPokemon({ q, type, only, limit, offset }: PokemonQuery): Promise<PokemonListResponse> {
   if (type && !(await getTypeNames()).includes(type)) {
     throw createError({ statusCode: 404, statusMessage: 'Unknown type' })
   }
@@ -26,6 +53,6 @@ export async function queryPokemon({ q, type, limit, offset }: PokemonQuery): Pr
     type ? getTypeMembers(type) : undefined,
   ])
   const needle = q.trim().toLowerCase()
-  const matches = index.filter(entry => entry.name.includes(needle) && (!inType || inType.has(entry.name)))
+  const matches = index.filter(entry => entry.name.includes(needle) && (!inType || inType.has(entry.name)) && (!only || only.has(entry.name)))
   return { total: matches.length, items: matches.slice(offset, offset + limit).map(entry => toListItem(entry, grass)) }
 }
