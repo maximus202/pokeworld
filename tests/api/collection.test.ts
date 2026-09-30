@@ -162,10 +162,31 @@ describe('GET /api/pokemon?caught=true', () => {
     expect((await list(v, 'caught=false')).body.total).toBe(30)
   })
 
+  it.each(['TRUE', 'True', ' true '])('treats caught=%j like caught=true', async (value) => {
+    const v = visitor()
+    await catchIt(v, 'bulbasaur')
+    expect((await list(v, `caught=${encodeURIComponent(value)}`)).body.items.map(i => i.name)).toEqual(['bulbasaur'])
+  })
+
   it('reflects a removal straight away', async () => {
     const v = visitor()
     await catchIt(v, 'bulbasaur')
     await remove(v, 'bulbasaur')
     expect((await list(v, 'caught=true')).body.total).toBe(0)
+  })
+})
+
+describe('per-visitor responses are not shareable by caches', () => {
+  const cacheControl = async (v: Visitor, path: string) => (await v.request(path)).headers.get('cache-control')
+
+  it.each(['/api/collection', '/api/pokemon?caught=true', '/api/me'])('marks %s private', async (path) => {
+    expect(await cacheControl(visitor(), path)).toBe('private, no-store')
+  })
+
+  it('leaves the list that is the same for everyone alone', async () => {
+    const v = visitor()
+    expect(await cacheControl(v, '/api/pokemon')).toBeNull()
+    expect(await cacheControl(v, '/api/pokemon?caught=false')).toBeNull()
+    expect(await cacheControl(v, '/api/pokemon/bulbasaur')).toBeNull()
   })
 })

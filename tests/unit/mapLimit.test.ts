@@ -19,4 +19,17 @@ describe('mapLimit', () => {
     expect(await mapLimit([], 8, async n => n)).toEqual([])
     expect(await mapLimit([1, 2], 8, async n => n)).toEqual([1, 2])
   })
+
+  it('rejects as soon as one call fails, while calls already started keep running', async () => {
+    const started: number[] = []
+    const failing = mapLimit([1, 2, 3, 4], 2, async (n) => {
+      started.push(n)
+      if (n === 1) throw new Error('boom')
+      await new Promise(r => setTimeout(r, 20))
+      return n
+    })
+    await expect(failing).rejects.toThrow('boom')
+    await new Promise(r => setTimeout(r, 60))
+    expect(started).toContain(2) // documented: fn should handle its own errors
+  })
 })

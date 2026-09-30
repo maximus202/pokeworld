@@ -26,7 +26,10 @@ export function toCollectionItems(entries: CaughtEntry[], lookup: (name: string)
   return mapLimit(entries, LOOKUP_CONCURRENCY, async ({ name, caughtAt }) => ({
     name,
     caughtAt,
-    pokemon: await lookup(name).then(({ id, image }): PokemonListItem => ({ id, name, shiny: image.shiny, imageUrl: image.url }), () => null),
+    pokemon: await lookup(name).then(({ id, image }): PokemonListItem => ({ id, name, shiny: image.shiny, imageUrl: image.url }), (error: Error & { statusMessage?: string }) => {
+      console.warn(`[collection] could not load ${name}: ${error.statusMessage ?? error.message}`)
+      return null
+    }),
   }))
 }
 
