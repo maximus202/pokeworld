@@ -1,11 +1,12 @@
-import { card, cards, expect, test } from './helpers'
+import type { Page } from '@playwright/test'
+import { card, cards, catchViaApi, expect, test } from './helpers'
 
-const search = (page: import('@playwright/test').Page) => page.getByRole('textbox', { name: 'Search Pokemon by name' })
-const pickType = async (page: import('@playwright/test').Page, name: string) => {
+const search = (page: Page) => page.getByRole('textbox', { name: 'Search Pokemon by name' })
+const pickType = async (page: Page, name: string) => {
   await page.getByRole('combobox', { name: 'Filter by type' }).click()
   await page.getByRole('option', { name }).click()
 }
-const caughtOnly = (page: import('@playwright/test').Page) => page.getByRole('switch', { name: 'Caught only' })
+const caughtOnly = (page: Page) => page.getByRole('switch', { name: 'Caught only' })
 
 test('lists the Pokemon a page at a time, with how many are left', async ({ page }) => {
   await page.goto('/')
@@ -17,6 +18,22 @@ test('lists the Pokemon a page at a time, with how many are left', async ({ page
 
   await expect(cards(page)).toHaveCount(30)
   await expect(page.getByTestId('load-more')).toBeHidden()
+})
+
+test('shows an error with Try again when the list cannot be loaded, and Try again recovers', async ({ page }) => {
+  await page.goto('/')
+  // The failure is made in the browser, so this does not depend on what the server has cached.
+  // (The browser retries a failed GET once, so every attempt has to fail.)
+  await page.route(/\/api\/pokemon\?/, route => route.fulfill({ status: 502, json: { statusMessage: 'PokeAPI request failed' } }))
+
+  await search(page).fill('bulb')
+  await expect(page.getByTestId('list-error')).toBeVisible()
+
+  await page.unroute(/\/api\/pokemon\?/)
+  await page.getByTestId('list-retry').click()
+
+  await expect(cards(page)).toHaveCount(1)
+  await expect(page.getByTestId('list-error')).toBeHidden()
 })
 
 test.describe('search', () => {
@@ -89,7 +106,7 @@ test.describe('type filter', () => {
 test.describe('caught only', () => {
   test('lists only what the visitor has caught, together with search and type, and survives a reload', async ({ page }) => {
     await page.goto('/')
-    for (const name of ['bulbasaur', 'lotad', 'charmander']) expect((await page.request.put(`/api/collection/${name}`)).ok()).toBe(true)
+    await catchViaApi(page, 'bulbasaur', 'lotad', 'charmander')
     await page.reload()
 
     await caughtOnly(page).click()
@@ -123,7 +140,7 @@ test.describe('caught only', () => {
 
   test('marks the Pokemon already caught in the list', async ({ page }) => {
     await page.goto('/')
-    await page.request.put('/api/collection/bulbasaur')
+    await catchViaApi(page, 'bulbasaur')
     await page.reload()
 
     await expect(card(page, 'bulbasaur').getByTestId('caught-badge')).toBeVisible()

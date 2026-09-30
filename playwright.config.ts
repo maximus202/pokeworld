@@ -3,8 +3,8 @@ import { APP_PORT, APP_URL, FIXTURE_PORT, FIXTURE_URL } from './tests/e2e/env'
 
 /**
  * The app runs as a production build against a fixture PokeAPI and a throwaway database, so the
- * suite needs no network. One worker, in file order: the app caches PokeAPI data for the life of
- * the process, so a few specs rely on running before anything has warmed the cache.
+ * suite needs no network. Every test is its own visitor and none depends on what an earlier test
+ * cached, so they can run in any order. One worker keeps the run easy to follow.
  */
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -19,7 +19,6 @@ export default defineConfig({
     },
     {
       command: 'rm -f data/e2e.db data/e2e.db-wal data/e2e.db-shm && npm run build && node .output/server/index.mjs',
-      // /api/me does not touch PokeAPI, so waiting for it leaves the app's cache cold.
       url: `${APP_URL}/api/me`,
       timeout: 240_000,
       env: {

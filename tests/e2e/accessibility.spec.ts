@@ -1,12 +1,13 @@
 import AxeBuilder from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
-import { card, cards, expect, openPanel, test } from './helpers'
+import { card, cards, catchViaApi, expect, test } from './helpers'
 
 /** Presses Tab until the locator has focus, so the test proves it can be reached from the keyboard. */
 async function tabTo(page: Page, locator: ReturnType<Page['locator']>, max = 30) {
   for (let i = 0; i < max; i++) {
     await page.keyboard.press('Tab')
-    if (await locator.evaluate(el => el === document.activeElement).catch(() => false)) return
+    // count() first: evaluate() would wait for a missing element until the whole test times out.
+    if (await locator.count() && await locator.evaluate(el => el === document.activeElement)) return
   }
   throw new Error(`Tab never reached ${locator} in ${max} presses`)
 }
@@ -24,7 +25,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
     test('browse', async ({ page }) => {
       await page.goto('/')
-      await page.request.put('/api/collection/bulbasaur')
+      await catchViaApi(page, 'bulbasaur')
       await page.reload()
       await expect(card(page, 'bulbasaur').getByTestId('caught-badge')).toBeVisible()
       expect(await violations(page)).toEqual([])
@@ -41,7 +42,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('collection-empty')).toBeVisible()
       expect(await violations(page)).toEqual([])
 
-      await page.request.put('/api/collection/lotad')
+      await catchViaApi(page, 'lotad')
       await page.reload()
       await expect(cards(page)).toHaveCount(1)
       expect(await violations(page)).toEqual([])
@@ -89,6 +90,32 @@ test.describe('on a phone', () => {
   })
 })
 
+test.describe('with a mouse', () => {
+  test('removing a card does not move focus to the page heading, which would scroll the page to the top', async ({ page }) => {
+    await page.goto('/')
+    await catchViaApi(page, 'bulbasaur', 'lotad')
+    await page.goto('/collection')
+
+    await page.getByRole('button', { name: 'Remove Lotad' }).click()
+
+    await expect(cards(page)).toHaveCount(1)
+    await expect(page.getByRole('heading', { name: 'My Collection' })).not.toBeFocused()
+  })
+})
+
+test.describe('page titles', () => {
+  test('each screen has its own title, including after moving between them', async ({ page }) => {
+    await page.goto('/')
+    await expect(page).toHaveTitle('Pokemon | Pokeworld')
+
+    await page.getByTestId('collection-link').click()
+    await expect(page).toHaveTitle('My Collection | Pokeworld')
+
+    await page.goto('/collection')
+    await expect(page).toHaveTitle('My Collection | Pokeworld')
+  })
+})
+
 test.describe('with only a keyboard', () => {
   test('the first Tab stop is a link that skips to the content', async ({ page }) => {
     await page.goto('/')
@@ -117,8 +144,7 @@ test.describe('with only a keyboard', () => {
 
   test('removing a Pokemon from the grid leaves focus on the page heading, not lost', async ({ page }) => {
     await page.goto('/')
-    await page.request.put('/api/collection/bulbasaur')
-    await page.request.put('/api/collection/lotad')
+    await catchViaApi(page, 'bulbasaur', 'lotad')
     await page.goto('/collection')
 
     await tabTo(page, page.getByRole('button', { name: 'Remove Lotad' }))
@@ -128,9 +154,24 @@ test.describe('with only a keyboard', () => {
     await expect(page.getByRole('heading', { name: 'My Collection' })).toBeFocused()
   })
 
+  test('a removal that fails leaves focus on the Remove button, so the visitor can try again', async ({ page }) => {
+    await page.goto('/')
+    await catchViaApi(page, 'lotad')
+    await page.goto('/collection')
+    await page.route('**/api/collection/lotad', route => (route.request().method() === 'DELETE' ? route.fulfill({ status: 500, json: {} }) : route.fallback()))
+    const remove = page.getByRole('button', { name: 'Remove Lotad' })
+
+    await tabTo(page, remove)
+    await page.keyboard.press('Enter')
+
+    await expect(page.getByText('Couldn\'t remove that Pokemon')).toBeVisible()
+    await expect(card(page, 'lotad')).toBeVisible()
+    await expect(remove).toBeFocused()
+  })
+
   test('the reset dialog is reachable and can be cancelled with the keyboard', async ({ page }) => {
     await page.goto('/')
-    await page.request.put('/api/collection/lotad')
+    await catchViaApi(page, 'lotad')
     await page.reload()
 
     await tabTo(page, page.getByTestId('reset-button'))

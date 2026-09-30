@@ -1,9 +1,6 @@
 import type { Page } from '@playwright/test'
-import { card, cards, expect, openPanel, test } from './helpers'
+import { card, cards, catchViaApi, expect, openPanel, test } from './helpers'
 
-const catchViaApi = async (page: Page, ...names: string[]) => {
-  for (const name of names) expect((await page.request.put(`/api/collection/${name}`)).ok()).toBe(true)
-}
 const collectionLink = (page: Page) => page.getByTestId('collection-link')
 
 test.describe('catch', () => {

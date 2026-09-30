@@ -1,4 +1,4 @@
-import { cards, expect, newVisitor, test } from './helpers'
+import { cards, catchViaApi, expect, newVisitor, test } from './helpers'
 
 const label = (id: string) => `Trainer #${id.slice(0, 4)}`
 
@@ -17,7 +17,7 @@ test.describe('a private collection without signing up', () => {
   test('a catch in one browser never appears in the other', async ({ browser }) => {
     const [a, b] = [await newVisitor(browser), await newVisitor(browser)]
 
-    expect((await a.page.request.put('/api/collection/bulbasaur')).ok()).toBe(true)
+    await catchViaApi(a.page, 'bulbasaur')
     await a.page.goto('/collection')
     await b.page.goto('/collection')
 
@@ -33,8 +33,7 @@ test.describe('a private collection without signing up', () => {
 
   test('one browser removing or resetting never changes the other\'s collection', async ({ browser }) => {
     const [a, b] = [await newVisitor(browser), await newVisitor(browser)]
-    for (const v of [a, b]) await v.page.request.put('/api/collection/bulbasaur')
-    for (const v of [a, b]) await v.page.request.put('/api/collection/lotad')
+    for (const v of [a, b]) await catchViaApi(v.page, 'bulbasaur', 'lotad')
 
     await b.page.request.delete('/api/collection/bulbasaur')
     await b.page.request.delete('/api/collection')
@@ -49,7 +48,7 @@ test.describe('a private collection without signing up', () => {
 
   test('reloading keeps a browser\'s own collection, and its label matches the one the server rendered', async ({ browser }) => {
     const v = await newVisitor(browser)
-    await v.page.request.put('/api/collection/lotad')
+    await catchViaApi(v.page, 'lotad')
 
     const response = await v.page.goto('/collection')
     const html = await response!.text() // what the server rendered, before any script ran

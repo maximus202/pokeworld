@@ -1,4 +1,4 @@
-import { card, expect, fixture, openPanel, test } from './helpers'
+import { card, expect, openPanel, test } from './helpers'
 
 test.describe('details panel', () => {
   test('shows the required fields', async ({ page }) => {
@@ -49,15 +49,15 @@ test.describe('details panel', () => {
     await expect(page.locator('[data-testid^=pokemon-card-]')).toHaveCount(30)
   })
 
-  // Wartortle is used by no other spec, so its details are not cached yet when this runs.
   test('shows an error with Try again when the details cannot be loaded, and recovers', async ({ page }) => {
     await page.goto('/')
-    await fixture.failAll() // the browser retries a failed GET once, so one failure would not show
+    // Made in the browser, which retries a failed GET once, so every attempt has to fail.
+    await page.route('**/api/pokemon/wartortle', route => route.fulfill({ status: 502, json: { statusMessage: 'PokeAPI request failed' } }))
 
     await card(page, 'wartortle').locator('a').click()
     await expect(page.getByTestId('panel-error')).toBeVisible()
 
-    await fixture.failAll(false)
+    await page.unroute('**/api/pokemon/wartortle')
     await page.getByTestId('panel-retry').click()
 
     await expect(page.getByTestId('panel-name')).toHaveText('Wartortle')

@@ -1,6 +1,4 @@
 import { test as base, expect, type Browser, type Page } from '@playwright/test'
-import { fixtureControl } from '../fixtures/server'
-import { FIXTURE_URL } from './env'
 
 /** A 1x1 PNG. Pokemon images live on raw.githubusercontent.com, which the suite never reaches. */
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=', 'base64')
@@ -27,12 +25,14 @@ export async function newVisitor(browser: Browser) {
 
 export { expect }
 
-/** Controls the fixture PokeAPI: request counts, and failures for the next request to a path. */
-export const fixture = fixtureControl(FIXTURE_URL)
-
 export const card = (page: Page, name: string) => page.getByTestId(`pokemon-card-${name}`)
 export const cards = (page: Page) => page.locator('[data-testid^=pokemon-card-]')
 export const openPanel = async (page: Page, name: string) => {
   await card(page, name).locator('a').click()
   await expect(page.getByTestId('panel-name')).toHaveText(new RegExp(name, 'i'))
+}
+
+/** Catches Pokemon through the API as this page's visitor, failing the test if any catch is refused. */
+export async function catchViaApi(page: Page, ...names: string[]) {
+  for (const name of names) expect((await page.request.put(`/api/collection/${name}`)).ok(), `catching ${name}`).toBe(true)
 }
