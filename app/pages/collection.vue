@@ -8,11 +8,19 @@ const { status, refresh } = await useAsyncData('collection-screen', async () => 
   return true
 }, { lazy: true })
 const loading = computed(() => status.value === 'pending')
+
+// The card that was just removed had the keyboard focus. Without this it falls back to the top of
+// the page and a keyboard visitor has to tab all the way back down.
+const heading = ref<HTMLElement>()
+async function remove(name: string) {
+  await collection.removePokemon(name)
+  heading.value?.focus()
+}
 </script>
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold">
+    <h1 ref="heading" tabindex="-1" class="text-2xl font-bold">
       My Collection
     </h1>
 
@@ -39,7 +47,7 @@ const loading = computed(() => status.value === 'pending')
 
     <div v-else-if="collection.items.value.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6" data-testid="collection-list">
       <template v-for="item in collection.items.value" :key="item.name">
-        <PokemonCard v-if="item.pokemon" :pokemon="item.pokemon" :caught-at="item.caughtAt" removable @remove="collection.removePokemon(item.name)" />
+        <PokemonCard v-if="item.pokemon" :pokemon="item.pokemon" :caught-at="item.caughtAt" removable @remove="remove(item.name)" />
         <!-- It still counts and can be removed; it just could not be looked up. -->
         <div v-else class="space-y-2 rounded-xl border border-error p-3" :data-testid="`collection-error-${item.name}`">
           <p class="font-semibold">
@@ -53,7 +61,7 @@ const loading = computed(() => status.value === 'pending')
           </p>
           <div class="flex flex-wrap gap-2">
             <UButton size="xs" color="error" variant="outline" label="Try again" :loading="loading" data-testid="retry-button" @click="refresh()" />
-            <UButton size="xs" color="neutral" variant="outline" label="Remove" :aria-label="`Remove ${displayName(item.name)}`" data-testid="remove-button" @click="collection.removePokemon(item.name)" />
+            <UButton size="xs" color="neutral" variant="outline" label="Remove" :aria-label="`Remove ${displayName(item.name)}`" data-testid="remove-button" @click="remove(item.name)" />
           </div>
         </div>
       </template>
