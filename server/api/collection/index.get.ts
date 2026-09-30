@@ -1,7 +1,10 @@
 import type { CollectionResponse } from '#shared/types/pokemon'
 
-export default defineEventHandler(async (event): Promise<CollectionResponse> => {
+export default defineEventHandler(async event => {
   markPrivate(event)
+
   const entries = useCollectionStore().list(requireVisitorId(event))
-  return { count: entries.length, items: await toCollectionItems(entries) }
+  const items = await toCollectionItems(entries)
+
+  return { count: entries.length, items } satisfies CollectionResponse
 })

@@ -9,6 +9,7 @@ defineProps<{
   removable?: boolean
 }>()
 defineEmits<{ remove: [] }>()
+
 const panel = usePokemonPanel()
 </script>
 
@@ -16,9 +17,18 @@ const panel = usePokemonPanel()
   <div class="relative" :data-testid="`pokemon-card-${pokemon.name}`">
     <NuxtLink
       :to="panel.to(pokemon.name)"
-      class="block rounded-xl border border-default bg-default p-3 transition hover:border-primary hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary"
+      class="
+        block rounded-xl border border-default bg-default p-3 transition
+        hover:border-primary hover:shadow-md
+        focus-visible:outline-2 focus-visible:outline-primary
+      "
     >
-      <PokemonImage :url="pokemon.imageUrl" :shiny="pokemon.shiny" :alt="displayName(pokemon.name)" />
+      <PokemonImage
+        :url="pokemon.imageUrl"
+        :shiny="pokemon.shiny"
+        :alt="displayName(pokemon.name)"
+      />
+
       <div class="mt-3 flex items-center justify-between gap-2">
         <div class="min-w-0">
           <p class="text-xs text-muted">
@@ -28,13 +38,29 @@ const panel = usePokemonPanel()
             {{ displayName(pokemon.name) }}
           </p>
         </div>
-        <UBadge v-if="caught" variant="subtle" label="Caught" data-testid="caught-badge" />
+        <UBadge
+          v-if="caught"
+          variant="subtle"
+          label="Caught"
+          data-testid="caught-badge"
+        />
       </div>
-      <!-- The server and the browser can be in different time zones; the browser's date wins. -->
-      <p v-if="caughtAt" class="mt-1 text-xs text-muted" :title="formatCaughtDateTime(caughtAt)" data-allow-mismatch data-testid="caught-date">
+
+      <!--
+        The server and the browser can be in different time zones; the browser's
+        date wins.
+      -->
+      <p
+        v-if="caughtAt"
+        class="mt-1 text-xs text-muted"
+        :title="formatCaughtDateTime(caughtAt)"
+        data-allow-mismatch
+        data-testid="caught-date"
+      >
         {{ `Caught ${formatCaughtDate(caughtAt)}` }}
       </p>
     </NuxtLink>
+
     <UButton
       v-if="removable"
       class="absolute left-2 top-2"
