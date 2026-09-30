@@ -17,7 +17,7 @@ async function load(name: string) {
   latest = name
   status.value = 'pending'
   try {
-    const result = await $fetch<PokemonDetails>(`/api/pokemon/${name}`)
+    const result = await $fetch<PokemonDetails>(`/api/pokemon/${encodeURIComponent(name)}`) // the name comes from the URL
     if (name === latest) [details.value, status.value] = [result, 'done'] // else: the visitor moved on
   }
   catch {
@@ -31,8 +31,12 @@ const caughtAt = computed(() => details.value && collection.caughtAt(details.val
 const busy = ref(false)
 async function toggle(name: string) {
   busy.value = true
-  await (caughtAt.value ? collection.removePokemon(name) : collection.catchPokemon(name))
-  busy.value = false
+  try {
+    await (caughtAt.value ? collection.removePokemon(name) : collection.catchPokemon(name))
+  }
+  finally {
+    busy.value = false
+  }
 }
 </script>
 

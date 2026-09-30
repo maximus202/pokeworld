@@ -3,24 +3,24 @@ import type { PokemonListResponse } from '#shared/types/pokemon'
 
 const PAGE_SIZE = 24
 const collection = useCollection()
+const toast = useToast()
 const { filters, update, clear } = useBrowseFilters()
 
 // The search box keeps its own text and updates the URL after a short pause.
 const search = ref(filters.value.q)
+let sent = filters.value.q // the last search we put in the URL
 let timer: ReturnType<typeof setTimeout>
 watch(search, (value) => {
   clearTimeout(timer)
-  timer = setTimeout(() => update({ q: value.trim() }), 250)
+  timer = setTimeout(() => update({ q: (sent = value.trim()) }), 250)
 })
 onBeforeUnmount(() => clearTimeout(timer))
-// Follow the URL when it changes elsewhere (e.g. "Clear filters"), but not while typing.
-watch(() => filters.value.q, q => q !== search.value.trim() && (search.value = q))
-
-const { data: typeData } = await useFetch<{ types: string[] }>('/api/types')
-const typeItems = computed(() => [
-  { label: 'All types', value: 'all' },
-  ...(typeData.value?.types ?? []).map(type => ({ label: displayName(type), value: type })),
-])
+// Follow the URL when it changes elsewhere (e.g. "Clear filters"). A change we sent ourselves is
+// ignored: by the time it lands the visitor may have typed more, and that must not be undone.
+watch(() => filters.value.q, (q) => {
+  if (q !== sent) search.value = q
+  sent = q
+})
 
 const query = (offset: number) => ({
   q: filters.value.q || undefined,
@@ -29,7 +29,15 @@ const query = (offset: number) => ({
   limit: PAGE_SIZE,
   offset,
 })
-const { data, status, error, refresh } = await useFetch<PokemonListResponse>('/api/pokemon', { query: computed(() => query(0)) })
+// Independent requests, so they run together.
+const [{ data: typeData }, { data, status, error, refresh }] = await Promise.all([
+  useFetch<{ types: string[] }>('/api/types'),
+  useFetch<PokemonListResponse>('/api/pokemon', { query: computed(() => query(0)) }),
+])
+const typeItems = computed(() => [
+  { label: 'All types', value: 'all' },
+  ...(typeData.value?.types ?? []).map(type => ({ label: displayName(type), value: type })),
+])
 
 // Pages after the first, added by "Load more". A new search or filter starts again from page one.
 const more = ref<PokemonListItem[]>([])
@@ -39,12 +47,15 @@ const remaining = computed(() => (data.value?.total ?? 0) - items.value.length)
 
 const loadingMore = ref(false)
 async function loadMore() {
+  const firstPage = data.value
   loadingMore.value = true
   try {
-    more.value.push(...(await $fetch<PokemonListResponse>('/api/pokemon', { query: query(items.value.length) })).items)
+    const page = await $fetch<PokemonListResponse>('/api/pokemon', { query: query(items.value.length) })
+    // If the first page was replaced meanwhile the filters changed: this page belongs to a list that is gone.
+    if (data.value === firstPage) more.value.push(...page.items)
   }
   catch {
-    useToast().add({ title: 'Couldn\'t load more Pokemon', description: 'Please try again.', color: 'error' })
+    toast.add({ title: 'Couldn\'t load more Pokemon', description: 'Please try again.', color: 'error' })
   }
   finally {
     loadingMore.value = false
@@ -107,7 +118,7 @@ watch(collection.count, () => filters.value.caught && refresh())
         <PokemonCard v-for="pokemon in items" :key="pokemon.id" :pokemon="pokemon" :caught="collection.has(pokemon.name)" />
       </div>
       <div v-if="remaining > 0" class="flex justify-center">
-        <UButton variant="outline" :loading="loadingMore" :label="`Load more (${remaining} left)`" data-testid="load-more" @click="loadMore" />
+        <UButton variant="outline" :loading="loadingMore" :disabled="status === 'pending'" :label="`Load more (${remaining} left)`" data-testid="load-more" @click="loadMore" />
       </div>
     </template>
   </div>

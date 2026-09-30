@@ -15,6 +15,9 @@ const hold = (name: string) => new Promise<PokemonDetails>((resolve, reject) => 
 let mode: Record<string, 'ok' | 'fail' | 'hold'> = {}
 let caught: Record<string, string> = {}
 let changes: string[] = []
+let collectionReads = 0
+let encodedRequests = 0
+let collectionFails = false
 
 for (const name of ['bulbasaur', 'lotad', 'slow', 'fast']) {
   registerEndpoint(`/api/pokemon/${name}`, () => {
@@ -22,7 +25,15 @@ for (const name of ['bulbasaur', 'lotad', 'slow', 'fast']) {
     return mode[name] === 'hold' ? hold(name) : details(name, { id: name === 'lotad' ? 270 : 1 })
   })
 }
-registerEndpoint('/api/collection', () => ({ count: 0, items: Object.entries(caught).map(([name, caughtAt]) => ({ name, caughtAt, pokemon: null })) }))
+registerEndpoint('/api/pokemon/..%2Fcollection', () => {
+  encodedRequests++
+  throw createError({ statusCode: 404 })
+})
+registerEndpoint('/api/collection', () => {
+  collectionReads++
+  if (collectionFails) throw createError({ statusCode: 500 })
+  return { count: 0, items: Object.entries(caught).map(([name, caughtAt]) => ({ name, caughtAt, pokemon: null })) }
+})
 registerEndpoint('/api/collection/bulbasaur', {
   method: 'PUT',
   handler: () => { changes.push('catch'); caught.bulbasaur = '2026-09-28T14:00:00.000Z'; return null },
@@ -48,6 +59,9 @@ beforeEach(() => {
   mode = {}
   caught = {}
   changes = []
+  collectionReads = 0
+  encodedRequests = 0
+  collectionFails = false
   useState('collection-items').value = []
 })
 
@@ -137,5 +151,25 @@ describe('PokemonPanel', () => {
     await usePokemonPanel().close()
 
     expect(useRoute().query).toEqual({ q: 'bulb' })
+  })
+
+  it('encodes the name from the URL, so a crafted link cannot reach another endpoint', async () => {
+    // A browser resolves "/api/pokemon/../collection" to "/api/collection" before sending it, so
+    // what matters is that the panel asks for the encoded path and never builds that URL.
+    await openPanel('..%2Fcollection') // the URL value is ../collection
+
+    await vi.waitFor(() => expect(encodedRequests).toBe(1))
+    expect(collectionReads).toBe(0)
+  })
+
+  it('stops the Catch button spinning when the follow-up re-read fails', async () => {
+    const wrapper = await openPanel()
+    wrapper.vm.$.appContext.config.errorHandler = () => {} // the failed re-read rejects out of the click handler
+    await vi.waitFor(() => expect(text('catch-toggle')).toBe('Catch'))
+    collectionFails = true
+
+    await click('catch-toggle')
+
+    await vi.waitFor(() => expect(body().querySelector<HTMLElement>('[data-testid=catch-toggle]')!.hasAttribute('disabled')).toBe(false))
   })
 })

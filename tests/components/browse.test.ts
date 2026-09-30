@@ -13,7 +13,13 @@ const page = (from: number, count: number, total: number): PokemonListResponse =
 type Query = Record<string, string | undefined>
 let respond: (query: Query) => PokemonListResponse | Promise<PokemonListResponse>
 let queries: Query[] = []
-registerEndpoint('/api/types', () => ({ types: ['fire', 'grass'] }))
+let typesGate: Promise<void> | undefined
+let typeCalls = 0
+registerEndpoint('/api/types', async () => {
+  typeCalls++
+  await typesGate
+  return { types: ['fire', 'grass'] }
+})
 registerEndpoint('/api/pokemon', (event) => {
   const query = getQuery(event) as Query
   queries.push(query)
@@ -23,6 +29,8 @@ registerEndpoint('/api/pokemon', (event) => {
 const mounted: { unmount(): void }[] = []
 afterEach(() => mounted.splice(0).forEach(wrapper => wrapper.unmount()))
 beforeEach(() => {
+  typesGate = undefined
+  typeCalls = 0
   queries = []
   respond = () => page(1, 5, 5)
   useState('collection-items').value = []
@@ -38,6 +46,24 @@ const find = (wrapper: Awaited<ReturnType<typeof mountBrowse>>, id: string) => w
 const cards = (wrapper: Awaited<ReturnType<typeof mountBrowse>>) => wrapper.findAll('[data-testid^=pokemon-card-]')
 const query = () => useRoute().query
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+describe('loading the screen', () => {
+  it('asks for the types and the first page at the same time, not one after the other', async () => {
+    let release!: () => void
+    typesGate = new Promise(resolve => (release = resolve))
+    let releaseList!: () => void
+    const listGate = new Promise<void>(resolve => (releaseList = resolve))
+    respond = async () => { await listGate; return page(1, 3, 3) }
+
+    const opening = mountBrowse()
+    await vi.waitFor(() => expect(queries).toHaveLength(1)) // the list was asked for while the types are still held
+    expect(typeCalls).toBe(1)
+
+    release()
+    releaseList()
+    await opening
+  })
+})
 
 describe('list states', () => {
   it('shows a skeleton while loading, then the cards', async () => {
@@ -128,6 +154,53 @@ describe('Load more', () => {
     expect(queries).toHaveLength(requests) // and it did not ask the server again
   })
 
+  it('ignores a page that arrives after the filters changed', async () => {
+    let releaseStale!: () => void
+    const held = new Promise<void>(resolve => (releaseStale = resolve))
+    respond = (query) => {
+      if (query.type) return page(100, 2, 2)
+      return query.offset === '0' ? page(1, 24, 30) : held.then(() => page(25, 6, 30))
+    }
+    const wrapper = await mountBrowse()
+    await find(wrapper, 'load-more').trigger('click') // held
+    await vi.waitFor(() => expect(queries.at(-1)).toMatchObject({ offset: '24' }))
+
+    await useRouter().replace({ query: { type: 'grass' } })
+    await vi.waitFor(() => expect(cards(wrapper)).toHaveLength(2))
+    releaseStale()
+    await sleep(400) // long enough for the held response to arrive and, if it were not ignored, be shown
+
+    expect(cards(wrapper)).toHaveLength(2) // not 2 + the old filters' second page
+  })
+
+  it('disables Load more while the list is reloading', async () => {
+    let releaseReload!: () => void
+    const held = new Promise<void>(resolve => (releaseReload = resolve))
+    respond = query => (query.type ? held.then(() => page(1, 24, 30)) : page(1, 24, 30))
+    const wrapper = await mountBrowse()
+    expect(find(wrapper, 'load-more').attributes('disabled')).toBeUndefined()
+
+    await useRouter().replace({ query: { type: 'grass' } })
+    await vi.waitFor(() => expect(find(wrapper, 'load-more').attributes('disabled')).toBeDefined())
+
+    releaseReload()
+    await vi.waitFor(() => expect(find(wrapper, 'load-more').attributes('disabled')).toBeUndefined())
+  })
+
+  it('tells the visitor, and lets them try again, when loading more fails', async () => {
+    respond = query => (query.offset === '0' ? page(1, 24, 30) : (() => { throw createError({ statusCode: 502 }) })())
+    const wrapper = await mountBrowse()
+
+    await find(wrapper, 'load-more').trigger('click')
+    await flushPromises()
+
+    expect(useToast().toasts.value.at(-1)).toMatchObject({ title: 'Couldn\'t load more Pokemon' })
+    expect(cards(wrapper)).toHaveLength(24)
+    respond = query => (query.offset === '0' ? page(1, 24, 30) : page(25, 6, 30))
+    await find(wrapper, 'load-more').trigger('click')
+    await vi.waitFor(() => expect(cards(wrapper)).toHaveLength(30))
+  })
+
   it('starts again from the first page when the filters change', async () => {
     respond = query => (query.type ? page(1, 30, 30) : query.offset === '0' ? page(1, 24, 30) : page(25, 6, 30))
     const wrapper = await mountBrowse()
@@ -173,6 +246,24 @@ describe('search and filters live in the URL', () => {
     await vi.waitFor(() => expect(query()).toEqual({ caught: 'true' }))
     caught.vm.$emit('update:modelValue', false)
     await vi.waitFor(() => expect(query()).toEqual({}))
+  })
+
+  it('does not overwrite what the visitor typed when an earlier search finally lands in the URL', async () => {
+    const router = useRouter()
+    const slow = router.beforeEach(() => new Promise(resolve => setTimeout(resolve, 300))) // a slow navigation
+    try {
+      const wrapper = await mountBrowse()
+      const input = find(wrapper, 'search-input')
+      await input.setValue('pi')
+      await sleep(350) // "pi" is sent to the URL and the navigation is now pending
+      await input.setValue('pik')
+      await sleep(400) // the navigation for "pi" lands
+
+      expect((input.element as HTMLInputElement).value).toBe('pik')
+    }
+    finally {
+      slow()
+    }
   })
 
   it('keeps an open Pokemon panel when the filters change', async () => {

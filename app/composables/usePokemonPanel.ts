@@ -14,5 +14,14 @@ export function usePokemonPanel() {
     return { query: name ? { ...rest, pokemon: name } : rest }
   }
 
-  return { selected, to, close: () => router.replace(to(null)) }
+  /**
+   * Opening pushes a history entry (a link). If the visitor came from this same screen, closing
+   * steps back so no extra entry is left behind; a shared or reloaded link has nothing to go back to.
+   */
+  function close() {
+    const target = to(null)
+    return router.options.history.state.back === router.resolve(target).fullPath ? router.back() : router.replace(target)
+  }
+
+  return { selected, to, close }
 }
