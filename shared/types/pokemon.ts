@@ -25,7 +25,10 @@ export interface CollectionItem {
   name: string
   /** ISO 8601 UTC, e.g. 2026-09-28T14:03:11.402Z */
   caughtAt: string
-  /** null when PokeAPI failed for this entry; it still counts. */
+  /**
+   * null when the name is not in the cached Pokemon list, or the list could not
+   * be loaded; the entry still counts.
+   */
   pokemon: PokemonListItem | null
 }
 

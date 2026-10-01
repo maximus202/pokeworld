@@ -1,23 +1,35 @@
 <script setup lang="ts">
 useHead({ title: 'My Collection' })
+
 const collection = useCollection()
 
-// Re-read the collection when the screen opens. Without `lazy` the screen would wait for it; with
-// it a first visit shows the skeleton. "Try again" on a card that failed to load re-runs it.
-const { status, refresh } = await useAsyncData('collection-screen', async () => {
-  await collection.refresh()
-  return true
-}, { lazy: true })
+// Re-read the collection when the screen opens. Without `lazy` the screen would
+// wait for it; with it a first visit shows the skeleton. "Try again" on a card
+// that failed to load re-runs it.
+const { status, refresh } = await useAsyncData(
+  'collection-screen',
+  async () => {
+    await collection.refresh()
+    return true
+  },
+  { lazy: true },
+)
+
 const loading = computed(() => status.value === 'pending')
 
-// A keyboard visitor's focus was on the card that is about to disappear. Without this it falls
-// back to the top of the page and they have to tab all the way down again. Mouse and touch
-// visitors are left alone (moving focus would scroll the page to the top), and so is a removal
-// that failed: the button is still there and still has focus.
+// A keyboard visitor's focus was on the card that is about to disappear.
+// Without this it falls back to the top of the page and they have to tab all
+// the way down again. Mouse and touch visitors are left alone (moving focus
+// would scroll the page to the top), and so is a removal that failed: the
+// button is still there and still has focus.
 const heading = ref<HTMLElement>()
+
 async function remove(name: string) {
+  // Read before removing: once the card is gone the focus is gone with it.
   const byKeyboard = document.activeElement?.matches(':focus-visible')
-  if (await collection.removePokemon(name) && byKeyboard) heading.value?.focus()
+  const removed = await collection.removePokemon(name)
+
+  if (removed && byKeyboard) heading.value?.focus()
 }
 </script>
 
@@ -27,44 +39,106 @@ async function remove(name: string) {
       My Collection
     </h1>
 
-    <!-- A failed read must not look like an empty collection. Pokemon already loaded stay visible. -->
-    <UAlert v-if="status === 'error'" color="error" variant="subtle" title="Couldn't load your collection" description="Your Pokemon are safe; something went wrong reading them. Try again." data-testid="collection-error">
+    <!--
+      A failed read must not look like an empty collection. Pokemon already
+      loaded stay visible.
+    -->
+    <UAlert
+      v-if="status === 'error'"
+      color="error"
+      variant="subtle"
+      title="Couldn't load your collection"
+      description="Your Pokemon are safe; something went wrong reading them."
+      data-testid="collection-error"
+    >
       <template #actions>
-        <UButton color="error" variant="outline" label="Try again" :loading="loading" data-testid="collection-retry" @click="refresh()" />
+        <UButton
+          color="error"
+          variant="outline"
+          label="Try again"
+          :loading="loading"
+          data-testid="collection-retry"
+          @click="refresh()"
+        />
       </template>
     </UAlert>
 
-    <div v-if="loading && !collection.items.value.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6" data-testid="collection-loading">
+    <div
+      v-if="loading && !collection.items.value.length"
+      class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6"
+      data-testid="collection-loading"
+    >
       <USkeleton v-for="n in 6" :key="n" class="h-56" />
     </div>
 
-    <div v-else-if="!collection.items.value.length && status !== 'error'" class="py-16 text-center" data-testid="collection-empty">
-      <p class="text-lg font-semibold">
-        You haven't caught any Pokemon yet
-      </p>
+    <div
+      v-else-if="!collection.items.value.length && status !== 'error'"
+      class="py-16 text-center"
+      data-testid="collection-empty"
+    >
+      <p class="text-lg font-semibold">You haven't caught any Pokemon yet</p>
       <p class="mb-4 text-muted">
         Open a Pokemon and press Catch to add it here.
       </p>
       <UButton to="/" label="Browse Pokemon" />
     </div>
 
-    <div v-else-if="collection.items.value.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6" data-testid="collection-list">
+    <div
+      v-else-if="collection.items.value.length"
+      class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6"
+      data-testid="collection-list"
+    >
       <template v-for="item in collection.items.value" :key="item.name">
-        <PokemonCard v-if="item.pokemon" :pokemon="item.pokemon" :caught-at="item.caughtAt" removable @remove="remove(item.name)" />
-        <!-- It still counts and can be removed; it just could not be looked up. -->
-        <div v-else class="space-y-2 rounded-xl border border-error p-3" :data-testid="`collection-error-${item.name}`">
+        <PokemonCard
+          v-if="item.pokemon"
+          :pokemon="item.pokemon"
+          :caught-at="item.caughtAt"
+          removable
+          @remove="remove(item.name)"
+        />
+
+        <!--
+          It still counts and can be removed; it just could not be looked up.
+        -->
+        <div
+          v-else
+          class="space-y-2 rounded-xl border border-error p-3"
+          :data-testid="`collection-error-${item.name}`"
+        >
           <p class="font-semibold">
             {{ displayName(item.name) }}
           </p>
-          <p class="text-sm text-muted">
-            Couldn't load this Pokemon.
-          </p>
-          <p class="text-xs text-muted" :title="formatCaughtDateTime(item.caughtAt)" data-allow-mismatch>
+
+          <p class="text-sm text-muted">Couldn't load this Pokemon.</p>
+
+          <p
+            class="text-xs text-muted"
+            :title="formatCaughtDateTime(item.caughtAt)"
+            data-allow-mismatch
+          >
             {{ `Caught ${formatCaughtDate(item.caughtAt)}` }}
           </p>
+
           <div class="flex flex-wrap gap-2">
-            <UButton size="xs" color="error" variant="outline" label="Try again" :loading="loading" data-testid="retry-button" @click="refresh()" />
-            <UButton size="xs" color="neutral" variant="outline" label="Remove" :aria-label="`Remove ${displayName(item.name)}`" data-testid="remove-button" @click="remove(item.name)" />
+            <UButton
+              size="xs"
+              color="error"
+              variant="outline"
+              label="Try again"
+              :loading="loading"
+              data-testid="retry-button"
+              @click="refresh()"
+            />
+
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="outline"
+              label="Remove"
+              :aria-label="`Remove ${displayName(item.name)}`"
+              data-testid="remove-button"
+              @click="remove(item.name)"
+            />
           </div>
         </div>
       </template>

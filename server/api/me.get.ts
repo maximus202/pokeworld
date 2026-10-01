@@ -1,4 +1,4 @@
-export default defineEventHandler((event) => {
+export default defineEventHandler(event => {
   markPrivate(event)
   return { label: visitorLabel(requireVisitorId(event)) }
 })
