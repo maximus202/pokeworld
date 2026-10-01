@@ -1,0 +1,41 @@
+{
+  "name": "grass",
+  "pokemon": [
+    {
+      "pokemon": {
+        "name": "bulbasaur"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "ivysaur"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "venusaur"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "lotad"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "lombre"
+      },
+      "slot": 1
+    },
+    {
+      "pokemon": {
+        "name": "ludicolo"
+      },
+      "slot": 1
+    }
+  ]
+}

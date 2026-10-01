@@ -1,0 +1,11 @@
+{
+  "name": "normal",
+  "pokemon": [
+    {
+      "pokemon": {
+        "name": "spriteonly"
+      },
+      "slot": 1
+    }
+  ]
+}
